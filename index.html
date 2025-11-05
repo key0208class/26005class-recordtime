@@ -1,0 +1,1485 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>蓮小終點計時組 v1.6.0 (Firebase)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+
+    <script>
+        // ▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼
+        //
+        //    👉 請將您在 Firebase 步驟 2 複製的 `firebaseConfig` 貼在這裡
+        //
+ const firebaseConfig = {
+  apiKey: "AIzaSyDwVzBE6JSC9UhFQ2rGyzRX1wCae-YhUYI",
+  authDomain: "myclass26005-recordtime.firebaseapp.com",
+  projectId: "myclass26005-recordtime",
+  storageBucket: "myclass26005-recordtime.firebasestorage.app",
+  messagingSenderId: "902094530267",
+  appId: "1:902094530267:web:ad4d7709c1835d02564efe"
+};
+
+        //
+        // ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
+
+        // 【v1.6.0】 初始化 Firebase
+        try {
+            if (typeof firebaseConfig !== 'undefined') {
+                firebase.initializeApp(firebaseConfig);
+                console.log("Firebase 初始化成功！");
+            } else {
+                console.warn("Firebase Config 未設定，將以本機模式運行。");
+            }
+        } catch (e) {
+            console.error("Firebase 初始化失敗:", e);
+        }
+    </script>
+    
+    <style>
+        /* (同 v1.5.1) */
+        body { font-family: 'Inter', 'Noto Sans TC', sans-serif; background-color: #f3f4f6; font-size: 17px; }
+        .modal { transition: opacity 0.25s ease, transform 0.25s ease; }
+        .modal-content { transition: transform 0.25s ease; }
+        .modal.hidden { opacity: 0; transform: scale(0.95); pointer-events: none; }
+        .modal.visible { opacity: 1; transform: scale(1); }
+        .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); padding: 12px 24px; border-radius: 8px; font-size: 16px; z-index: 200; opacity: 0; transition: opacity 0.3s ease, bottom 0.3s ease; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        .toast.show { opacity: 1; bottom: 40px; }
+        .toast-success { background-color: #28a745; color: white; }
+        .toast-error { background-color: #dc3545; color: white; }
+        .time-cell { cursor: pointer; text-align: center; padding: 12px 6px; font-family: 'monospace', 'Courier New'; font-size: 1.1rem; transition: background-color 0.2s ease, color 0.2s ease; min-width: 100px; vertical-align: top; }
+        .time-cell:hover { background-color: #eff6ff; }
+        .time-cell.empty { color: #9ca3af; }
+        .time-cell.error { color: #ef4444; font-weight: bold; background-color: #fee2e2; animation: pulse-red 0.8s ease-in-out; }
+        @keyframes pulse-red { 0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); } 70% { box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); } 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); } }
+        .event-name-input { border: 1px solid #3b82f6; border-radius: 4px; padding: 4px 8px; width: 95%; }
+        .cell-action-btn { background: none; border: none; cursor: pointer; padding: 4px; border-radius: 6px; transition: background-color 0.2s; }
+        .cell-action-btn:hover { background-color: #e5e7eb; }
+        .cell-action-btn svg { width: 1.25rem; height: 1.25rem; }
+        .btn-icon-edit { color: #3b82f6; }
+        .btn-icon-save { color: #16a34a; }
+        .btn-icon-delete { color: #dc2626; }
+        .header-action-btn { display: inline-flex; align-items: center; justify-content: center; background-color: #4f46e5; color: white; font-weight: 500; padding: 6px; border-radius: 6px; transition: background-color 0.2s; width: 32px; height: 32px; cursor: pointer; font-size: 1.25rem; line-height: 1; }
+        .header-action-btn:hover { background-color: #4338ca; }
+        .saved-record-item { display: flex; align-items: center; background-color: #fdfba2; border: 1px solid #e7d98b; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.05); transition: all 0.2s ease; }
+        .saved-record-item:hover { transform: translateY(-1px); box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .saved-record-btn { background: none; border: none; color: #725a03; padding: 4px 10px; font-size: 0.875rem; font-weight: 500; cursor: pointer; }
+        .saved-record-btn:hover { background-color: #fcf891; }
+        .delete-record-btn { background: #fcf891; color: #a18a07; padding: 4px 8px; border: none; border-left: 1px solid #e7d98b; cursor: pointer; height: 100%; transition: background-color 0.2s, color 0.2s; }
+        .delete-record-btn:hover { background: #ef4444; color: white; }
+        .delete-record-btn svg { width: 1rem; height: 1rem; }
+        .btn-disabled { opacity: 0.6; cursor: not-allowed; background-color: #9ca3af; }
+        .btn-disabled:hover { background-color: #9ca3af; }
+        .conflict-btn-container { display: flex; justify-content: center; align-items: center; gap: 4px; margin-top: 4px; }
+        .conflict-btn { background-color: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; border-radius: 6px; padding: 2px 4px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; font-size: 0.75rem; font-weight: 500; transition: background-color 0.2s, color 0.2s; }
+        .conflict-btn:hover { background-color: #fee2e2; color: #991b1b; }
+        .conflict-btn svg { width: 0.875rem; height: 0.875rem; }
+        .cell-sort-btn { background-color: #fef2f2; color: #b91c1c; border: none; padding: 4px; border-radius: 6px; transition: background-color 0.2s; cursor: pointer; }
+        .cell-sort-btn:hover { background-color: #fee2e2; }
+        .cell-sort-btn svg { width: 1.25rem; height: 1.25rem; }
+        
+        /* 【v1.6.0】連線狀態指示燈 */
+        .connection-status {
+            display: inline-flex; align-items: center; gap: 6px;
+            font-size: 0.875rem; padding: 4px 10px;
+            border-radius: 12px; font-weight: 500;
+        }
+        .status-dot {
+            width: 10px; height: 10px; border-radius: 50%;
+            animation: pulse-animation 2s infinite;
+        }
+        .status-connected { background-color: #dcfce7; color: #166534; }
+        .status-connected .status-dot { background-color: #22c55e; }
+        .status-disconnected { background-color: #fee2e2; color: #991b1b; }
+        .status-disconnected .status-dot { background-color: #ef4444; }
+        @keyframes pulse-animation {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        /* (同 v1.4.0) 列印樣式 */
+        @media print {
+            body { font-size: 12px; background-color: white; }
+            header, footer, #event-modal, #time-input-modal, #save-record-modal, #custom-confirm-modal, #actions-modal, #btn-open-modal, #toast-container, .no-print {
+                display: none !important;
+            }
+            /* ... (其他列印樣式保持不變) ... */
+            .container { max-w-full; padding: 0; margin: 0; }
+            .bg-white { box-shadow: none; border-radius: 0; overflow: visible; }
+            .overflow-x-auto { overflow: visible; }
+            table { width: 100%; min-width: 0; border-collapse: collapse; border: 1px solid #ccc; }
+            th, td { border: 1px solid #ccc; padding: 6px 8px; font-size: 11px; }
+            thead { background-color: #e5e7eb !important; color: #1f2937 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            tr { page-break-inside: avoid; }
+            .time-cell { font-size: 12px; min-width: auto; padding: 6px 4px; }
+            .event-name-input, .cell-action-btn, .conflict-btn-container, .cell-sort-btn { display: none; }
+            .event-name { font-size: 12px; }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen p-4 sm:p-8">
+
+    <div id="toast-container"></div>
+
+    <div class="container mx-auto max-w-7xl">
+        
+        <header class="mb-6 flex flex-col sm:flex-row justify-between items-center gap-4">
+            
+            <div class="flex items-center gap-3 flex-wrap">
+                <h1 class="text-3xl font-bold text-gray-800">🏅 蓮小終點計時組 v1.6.0</h1>
+                
+                <div id="connection-status-container" class="no-print">
+                    <div class="connection-status status-disconnected">
+                        <div class="status-dot"></div>
+                        <span>離線</span>
+                    </div>
+                </div>
+
+                <div id="saved-records-container" class="flex flex-wrap gap-2 items-center">
+                    </div>
+            </div>
+
+            <div class="flex items-center bg-white rounded-lg shadow-sm p-2 gap-2 no-print">
+                <span class="text-gray-700 mr-2 font-medium">顯示名次：</span>
+                <button id="btn-rank-minus" class="bg-gray-200 text-gray-700 hover:bg-gray-300 rounded-full w-8 h-8 flex items-center justify-center transition duration-200">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"></path></svg>
+                </button>
+                <span id="rank-count-display" class="mx-2 text-lg font-bold text-blue-600 w-8 text-center">7</span>
+                <button id="btn-rank-plus" class="bg-gray-200 text-gray-700 hover:bg-gray-300 rounded-full w-8 h-8 flex items-center justify-center transition duration-200">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                </button>
+            </div>
+        </header>
+
+        <div class="bg-white rounded-lg shadow-md overflow-hidden">
+            <div class="overflow-x-auto">
+                <table id="events-table" class="w-full min-w-[1000px]">
+                    <thead class="bg-blue-600 text-white">
+                        </thead>
+                    <tbody id="events-table-body" class="text-gray-700">
+                        </tbody>
+                </table>
+            </div>
+            <footer class="p-4 border-t border-gray-200 no-print">
+                <button id="btn-open-modal" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-4 rounded-lg transition duration-200 flex items-center justify-center gap-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    <span>新增項目</span>
+                </button>
+            </footer>
+        </div>
+    </div>
+
+    <div id="event-modal" class="modal hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 no-print">
+        <div class="modal-content bg-white rounded-xl shadow-2xl w-full max-w-lg p-6 sm:p-8 transform">
+            <header class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold text-gray-800">新增運動項目 🏃</h2>
+                <button id="btn-close-modal" class="text-gray-400 hover:text-gray-600">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </header>
+            <form id="event-form">
+                <div class="space-y-5">
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <div>
+                            <label for="select-grade" class="block text-sm font-medium text-gray-700 mb-1">年級</label>
+                            <select id="select-grade" class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                <option value="一">一年級</option><option value="二">二年級</option><option value="三">三年級</option><option value="四">四年級</option><option value="五">五年級</option><option value="六">六年級</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="select-gender" class="block text-sm font-medium text-gray-700 mb-1">性別</label>
+                            <select id="select-gender" class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                <option value="男">男生</option><option value="女">女生</option><option value="混">混合</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="select-event" class="block text-sm font-medium text-gray-700 mb-1">項目</label>
+                            <select id="select-event" class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                <option value="60M">60M</option><option value="100M">100M</option><option value="200M">200M</option><option value="400M接力">400M接力</option><option value_A="大隊接力A">大隊接力A</option><option value="大隊接力B">大隊接力B</option><option value="趣味競賽">趣味競賽</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div>
+                        <label for="input-custom-name" class="block text-sm font-medium text-gray-700 mb-1">自訂項目名稱 (單項)</label>
+                        <input type="text" id="input-custom-name" class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" placeholder="例如：二年級60m趣味賽跑">
+                    </div>
+                    <div class="flex items-center">
+                        <span class="flex-grow border-t border-gray-300"></span>
+                        <span class="mx-4 text-gray-500 text-sm">或</span>
+                        <span class="flex-grow border-t border-gray-300"></span>
+                    </div>
+                    <div>
+                        <label for="batch-event-input" class="block text-sm font-medium text-gray-700 mb-1">批次項目輸入 (每行一個)</label>
+                        <textarea id="batch-event-input" rows="5" class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" placeholder="三女100m&#10;三男100m&#10;四女100m..."></textarea>
+                        <p class="mt-1 text-xs text-gray-500">如果填寫此欄，將優先批次新增。</p>
+                    </div>
+                    <div class="flex justify-end gap-3 pt-4">
+                        <button type="button" id="btn-cancel-modal" class="bg-gray-200 text-gray-700 hover:bg-gray-300 font-medium py-2 px-5 rounded-lg transition duration-200">
+                            取消
+                        </button>
+                        <button type="submit" id="btn-save-event" class="bg-blue-600 text-white hover:bg-blue-700 font-medium py-2 px-5 rounded-lg transition duration-200">
+                            儲存項目
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+    <div id="time-input-modal" class="modal hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60] p-4 no-print">
+        <div class="modal-content bg-white rounded-xl shadow-2xl w-full max-w-sm p-6 sm:p-8 transform">
+            <h2 id="time-modal-title" class="text-xl font-bold text-gray-800 mb-6">輸入時間 (第 1 名)</h2>
+            <form id="time-input-form">
+                <div class="grid grid-cols-3 gap-3">
+                    <div>
+                        <label for="time-min" class="block text-sm font-medium text-gray-700 text-center">分 (M)</label>
+                        <input type="number" id="time-min" min="0" max="59" class="w-full text-center text-lg p-3 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label for="time-sec" class="block text-sm font-medium text-gray-700 text-center">秒 (S)</label>
+                        <input type="number" id="time-sec" min="0" max="59" class="w-full text-center text-lg p-3 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label for="time-cs" class="block text-sm font-medium text-gray-700 text-center">毫秒 (CS)</label>
+                        <input type="number" id="time-cs" min="0" max="99" class="w-full text-center text-lg p-3 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                    </div>
+                </div>
+                <div class="flex justify-between items-center pt-6">
+                    <button type="button" id="btn-delete-time" class="bg-red-100 text-red-700 hover:bg-red-200 font-medium py-2 px-5 rounded-lg transition duration-200">
+                        刪除
+                    </button>
+                    <div class="flex gap-3">
+                        <button type="button" id="btn-cancel-time" class="bg-gray-200 text-gray-700 hover:bg-gray-300 font-medium py-2 px-5 rounded-lg transition duration-200">
+                            取消
+                        </button>
+                        <button type="submit" class="bg-blue-600 text-white hover:bg-blue-700 font-medium py-2 px-5 rounded-lg transition duration-200">
+                            儲存
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+    <div id="save-record-modal" class="modal hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60] p-4 no-print">
+        <div class="modal-content bg-white rounded-xl shadow-2xl w-full max-w-sm p-6 sm:p-8 transform">
+            <h2 class="text-xl font-bold text-gray-800 mb-6">儲存目前紀錄 💾</h2>
+            <form id="save-record-form">
+                <div>
+                    <label for="record-title" class="block text-sm font-medium text-gray-700 mb-1">紀錄標題</label>
+                    <input type="text" id="record-title" class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" placeholder="例如：11/28 上午 (本機快照)" required>
+                </div>
+                <div class="flex justify-end gap-3 pt-6">
+                    <button type="button" id="btn-cancel-save-record" class="bg-gray-200 text-gray-700 hover:bg-gray-300 font-medium py-2 px-5 rounded-lg transition duration-200">
+                        取消
+                    </button>
+                    <button type="submit" class="bg-blue-600 text-white hover:bg-blue-700 font-medium py-2 px-5 rounded-lg transition duration-200">
+                        儲存
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <div id="custom-confirm-modal" class="modal hidden fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-[70] p-4 no-print">
+        <div class="modal-content bg-white rounded-xl shadow-2xl w-full max-w-md p-6 sm:p-8 transform">
+            <div class="flex items-start gap-4">
+                <div class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-red-100 sm:mx-0">
+                    <svg class="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126z" />
+                    </svg>
+                </div>
+                <div class="mt-0 sm:ml-4 text-left">
+                    <h3 class="text-xl font-semibold leading-6 text-gray-900" id="custom-confirm-title">確認刪除</h3>
+                    <div class="mt-2">
+                        <p class="text-base text-gray-600" id="custom-confirm-message">您確定要執行此操作嗎？此動作無法復原。</p>
+                    </div>
+                </div>
+            </div>
+            <div class="mt-6 flex justify-end gap-3">
+                <button type="button" id="custom-confirm-cancel" class="bg-gray-200 text-gray-700 hover:bg-gray-300 font-medium py-2 px-5 rounded-lg transition duration-200">
+                    取消
+                </button>
+                <button type="button" id="custom-confirm-ok" class="bg-red-600 text-white hover:bg-red-700 font-medium py-2 px-5 rounded-lg transition duration-200 btn-disabled" disabled>
+                    確定刪除 (3)
+                </button>
+            </div>
+        </div>
+    </div>
+    <div id="actions-modal" class="modal hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 no-print">
+        <div class="modal-content bg-white rounded-xl shadow-2xl w-full max-w-xs p-6 transform">
+            <header class="flex justify-between items-center mb-6">
+                <h2 class="text-xl font-bold text-gray-800">操作選單 ⚙️</h2>
+                <button id="btn-close-actions-modal" class="text-gray-400 hover:text-gray-600">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </header>
+            <div class="space-y-3">
+                <button id="btn-action-save" class="w-full flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white font-medium py-3 px-5 rounded-lg transition duration-200">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path></svg>
+                    儲存 (本機快照)
+                </button>
+                <button id="btn-action-export-html" class="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-5 rounded-lg transition duration-200">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path></svg>
+                    網頁 (HTML)
+                </button>
+                <button id="btn-action-delete-all" class="w-full flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 text-white font-medium py-3 px-5 rounded-lg transition duration-200">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                    刪除全部項目
+                </button>
+            </div>
+        </div>
+    </div>
+
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            
+            // --- 【v1.6.0】Firebase 相關設定 ---
+            const LOCAL_STORAGE_KEY = 'hlesStopwatchApp_localSaves'; // v1.6.0 更改key以區分
+            let db; // Firebase Database 實例
+            const APP_DATA_PATH = 'appData'; // Firebase 上的主節點
+            
+            // 檢查 Firebase 是否成功初始化
+            const isFirebaseEnabled = (typeof firebase !== 'undefined' && typeof firebaseConfig !== 'undefined');
+            if (isFirebaseEnabled) {
+                try {
+                    db = firebase.database();
+                    console.log("Firebase Database 實例已取得。");
+                } catch(e) {
+                    console.error("無法取得 Firebase Database 實例:", e);
+                }
+            } else {
+                console.warn("Firebase 未啟用，將以「離線本機模式」運行。");
+            }
+
+
+            // --- 本機狀態 (State) ---
+            // 【v1.6.0】 
+            // state 現在是 Firebase 的「本機鏡像」。
+            // 我們不再「直接」修改 state，而是修改 Firebase。
+            // Firebase 會自動同步 state，然後我們再根據 state 渲染畫面。
+            let state = {
+                rankCount: 7, maxRank: 12, minRank: 1,
+                events: [], // 將由 Firebase 同步
+                savedRecords: [], // 【v1.6.0】這部分仍保留在本機 (localStorage)
+                editingTime: { eventIndex: null, rank: null }, //【v1.6.0】注意：ID 已改為 Index
+                confirmCallback: null, confirmInterval: null, 
+                deleteTimeConfirmation: false, deleteTimeTimeout: null 
+            };
+
+            // --- DOM 節點 (v1.5.0) ---
+            const rankCountDisplay = document.getElementById('rank-count-display');
+            const btnRankMinus = document.getElementById('btn-rank-minus');
+            const btnRankPlus = document.getElementById('btn-rank-plus');
+            const tableHead = document.querySelector('#events-table thead');
+            const tableBody = document.getElementById('events-table-body');
+            const toastContainer = document.getElementById('toast-container');
+            const eventModal = document.getElementById('event-modal');
+            const btnOpenModal = document.getElementById('btn-open-modal');
+            const btnCloseModal = document.getElementById('btn-close-modal');
+            const btnCancelModal = document.getElementById('btn-cancel-modal');
+            const eventForm = document.getElementById('event-form');
+            const selectGrade = document.getElementById('select-grade');
+            const selectGender = document.getElementById('select-gender');
+            const selectEvent = document.getElementById('select-event');
+            const inputCustomName = document.getElementById('input-custom-name');
+            const batchEventInput = document.getElementById('batch-event-input');
+            const timeInputModal = document.getElementById('time-input-modal');
+            const timeModalTitle = document.getElementById('time-modal-title');
+            const timeInputForm = document.getElementById('time-input-form');
+            const timeMin = document.getElementById('time-min');
+            const timeSec = document.getElementById('time-sec');
+            const timeCs = document.getElementById('time-cs');
+            const btnCancelTime = document.getElementById('btn-cancel-time');
+            const btnDeleteTime = document.getElementById('btn-delete-time');
+            const savedRecordsContainer = document.getElementById('saved-records-container');
+            const saveRecordModal = document.getElementById('save-record-modal');
+            const saveRecordForm = document.getElementById('save-record-form');
+            const recordTitleInput = document.getElementById('record-title');
+            const btnCancelSaveRecord = document.getElementById('btn-cancel-save-record');
+            const customConfirmModal = document.getElementById('custom-confirm-modal');
+            const customConfirmTitle = document.getElementById('custom-confirm-title');
+            const customConfirmMessage = document.getElementById('custom-confirm-message');
+            const customConfirmCancel = document.getElementById('custom-confirm-cancel');
+            const customConfirmOk = document.getElementById('custom-confirm-ok');
+            const actionsModal = document.getElementById('actions-modal');
+            const btnCloseActionsModal = document.getElementById('btn-close-actions-modal');
+            const btnActionSave = document.getElementById('btn-action-save');
+            const btnActionExportHtml = document.getElementById('btn-action-export-html');
+            const btnActionDeleteAll = document.getElementById('btn-action-delete-all');
+            const connectionStatusContainer = document.getElementById('connection-status-container'); //【v1.6.0】
+
+
+            // --- 輔助工具 (Helpers) ---
+
+            // (v1.5.0) 提示訊息
+            function showToast(message, type = 'success') {
+                const toast = document.createElement('div');
+                toast.className = `toast ${type === 'success' ? 'toast-success' : 'toast-error'}`;
+                toast.textContent = message;
+                toastContainer.appendChild(toast);
+                setTimeout(() => { toast.classList.add('show'); }, 10);
+                setTimeout(() => {
+                    toast.classList.remove('show');
+                    toast.addEventListener('transitionend', () => toast.parentNode?.removeChild(toast));
+                }, 3000);
+            }
+
+            // (同 v1.4.0) 格式化時間
+            function formatMillis(ms) {
+                if (ms === undefined || ms === null || isNaN(ms)) {
+                    return "---";
+                }
+                const totalCentiseconds = Math.round(ms / 10);
+                const minutes = Math.floor(totalCentiseconds / 6000);
+                const remainingCentiseconds = totalCentiseconds % 6000;
+                const seconds = Math.floor(remainingCentiseconds / 100);
+                const centiseconds = remainingCentiseconds % 100;
+                const pad = (n) => String(n).padStart(2, '0');
+                if (minutes > 0) {
+                    return `${pad(minutes)}'${pad(seconds)}"${pad(centiseconds)}`;
+                } else {
+                    return `${pad(seconds)}"${pad(centiseconds)}`;
+                }
+            }
+            // (同 v1.4.0) 解析時間
+            function parseTime(min, sec, cs) {
+                min = parseInt(min, 10) || 0;
+                sec = parseInt(sec, 10) || 0;
+                cs = parseInt(cs, 10) || 0;
+                if (min === 0 && sec === 0 && cs === 0 && (timeMin.value === '' && timeSec.value === '' && timeCs.value === '')) {
+                     return null;
+                }
+                if (min === 0 && sec === 0 && cs === 0) return 0;
+                return (min * 60000) + (sec * 1000) + (cs * 10);
+            }
+            // (同 v1.4.0) 儲存 "本機快照"
+            function saveStateToLocalStorage() {
+                try {
+                    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(state.savedRecords));
+                } catch (e) { console.error("無法儲存到 LocalStorage:", e); showToast('儲存本機快照失敗', 'error'); }
+            }
+            // (同 v1.4.0) 讀取 "本機快照"
+            function loadStateFromLocalStorage() {
+                try {
+                    const data = localStorage.getItem(LOCAL_STORAGE_KEY);
+                    if (data) { state.savedRecords = JSON.parse(data); }
+                } catch (e) { console.error("無法從 LocalStorage 讀取:", e); state.savedRecords = []; }
+            }
+            
+            // (同 v1.4.0) 確認視窗
+            function showCustomConfirm(title, message, callback) {
+                customConfirmTitle.textContent = title;
+                customConfirmMessage.textContent = message;
+                state.confirmCallback = callback;
+                customConfirmOk.disabled = true;
+                customConfirmOk.classList.add('btn-disabled');
+                customConfirmOk.textContent = '確定 (3)';
+                let countdown = 3;
+                if (state.confirmInterval) { clearInterval(state.confirmInterval); }
+                state.confirmInterval = setInterval(() => {
+                    countdown--;
+                    if (countdown > 0) {
+                        customConfirmOk.textContent = `確定 (${countdown})`;
+                    } else {
+                        clearInterval(state.confirmInterval);
+                        state.confirmInterval = null;
+                        customConfirmOk.textContent = '確定';
+                        customConfirmOk.disabled = false;
+                        customConfirmOk.classList.remove('btn-disabled');
+                    }
+                }, 1000);
+                customConfirmModal.classList.remove('hidden');
+                customConfirmModal.classList.add('visible');
+            }
+            // (同 v1.4.0)
+            function hideCustomConfirm() {
+                if (state.confirmInterval) { clearInterval(state.confirmInterval); state.confirmInterval = null; }
+                customConfirmModal.classList.remove('visible');
+                customConfirmModal.classList.add('hidden');
+                state.confirmCallback = null;
+                customConfirmOk.disabled = true;
+                customConfirmOk.classList.add('btn-disabled');
+                customConfirmOk.textContent = '確定 (3)';
+            }
+            
+            // --- 渲染功能 (Rendering) ---
+
+            // 【v1.6.0】
+            // 這些 render 函式現在只依賴 `state`。
+            // 由於 Firebase 會自動更新 `state`，畫面就會自動更新。
+            function renderTable() {
+                renderTableHeader();
+                renderTableBody();
+            }
+
+            // (同 v1.5.1) 渲染表頭
+            function renderTableHeader() {
+                tableHead.innerHTML = '';
+                const tr = document.createElement('tr');
+                
+                const thIndex = document.createElement('th');
+                thIndex.textContent = '序號';
+                thIndex.className = 'py-4 px-4 text-center w-16';
+                tr.appendChild(thIndex);
+
+                const thName = document.createElement('th');
+                thName.className = 'py-4 px-4 text-left min-w-[250px]';
+                const nameHeaderContainer = document.createElement('div');
+                nameHeaderContainer.className = 'flex justify-between items-center gap-2';
+                const spanName = document.createElement('span');
+                spanName.textContent = '項目';
+                spanName.className = 'text-base';
+                
+                const headerActionsButton = document.createElement('button');
+                headerActionsButton.id = 'btn-open-actions-modal';
+                headerActionsButton.className = 'header-action-btn no-print';
+                headerActionsButton.title = '操作選單';
+                headerActionsButton.innerHTML = `⚙️`; 
+                
+                nameHeaderContainer.appendChild(spanName);
+                nameHeaderContainer.appendChild(headerActionsButton);
+                thName.appendChild(nameHeaderContainer);
+                tr.appendChild(thName);
+
+                for (let i = 1; i <= state.rankCount; i++) {
+                    const thRank = document.createElement('th');
+                    thRank.textContent = `${i} 名`;
+                    thRank.className = 'py-4 px-3 text-center w-28';
+                    tr.appendChild(thRank);
+                }
+
+                tableHead.appendChild(tr);
+            }
+
+            /**
+             * 【v1.6.0】渲染表格主體 (tbody)
+             * - event.id 改為 index
+             * - ranks[] 改為 ranks{} (物件)
+             */
+            function renderTableBody() {
+                tableBody.innerHTML = ''; 
+
+                // 【v1.6.0】 確保 state.events 是一個陣列
+                const events = Array.isArray(state.events) ? state.events : [];
+
+                if (events.length === 0) {
+                    const tr = document.createElement('tr');
+                    const td = document.createElement('td');
+                    td.colSpan = 2 + state.rankCount; 
+                    td.textContent = '尚未新增任何項目，請點擊下方的「新增項目」按鈕。';
+                    td.className = 'text-center text-gray-500 p-8';
+                    tr.appendChild(td);
+                    tableBody.appendChild(tr);
+                    return;
+                }
+
+                events.forEach((event, index) => {
+                    // 【v1.6.0】 event 可能為 null (如果Firebase陣列中斷)
+                    if (!event) return; 
+
+                    const tr = document.createElement('tr');
+                    tr.className = 'border-b border-gray-200 hover:bg-blue-50 transition duration-150';
+                    tr.dataset.eventIndex = index; //【v1.6.0】ID 改為 Index
+                    if (index % 2 !== 0) {
+                        tr.classList.add('bg-gray-50');
+                    }
+
+                    // 1. 序號
+                    const tdIndex = document.createElement('td');
+                    tdIndex.textContent = String(index + 1).padStart(2, '0');
+                    tdIndex.className = 'py-3 px-4 text-center font-medium text-gray-600 text-lg';
+                    tr.appendChild(tdIndex);
+
+                    // 2. 項目名稱
+                    const tdName = document.createElement('td');
+                    tdName.className = 'py-3 px-4 font-medium';
+                    const flexContainer = document.createElement('div');
+                    flexContainer.className = 'flex justify-between items-center';
+
+                    const nameContainer = document.createElement('div');
+                    const spanName = document.createElement('span');
+                    spanName.className = 'event-name text-lg';
+                    spanName.textContent = event.name;
+                    const inputName = document.createElement('input');
+                    inputName.type = 'text';
+                    inputName.className = 'event-name-input hidden text-lg';
+                    inputName.value = event.name;
+                    nameContainer.appendChild(spanName);
+                    nameContainer.appendChild(inputName);
+
+                    // 按鈕區
+                    const buttonContainer = document.createElement('div');
+                    buttonContainer.className = 'flex gap-1 no-print';
+                    
+                    const sortBtnContainer = document.createElement('span');
+                    sortBtnContainer.id = `sort-btn-container-${index}`; //【v1.6.0】
+                    sortBtnContainer.className = 'ml-1';
+                    
+                    buttonContainer.innerHTML = `
+                        <button class="cell-action-btn btn-icon-edit btn-toggle-edit-icon">
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897l8.93-8.93zM16.862 4.487l-8.93 8.93-1.688-1.688 8.93-8.93 1.688 1.688z"></path></svg>
+                        </button>
+                        <button class="cell-action-btn btn-icon-save btn-save-name-icon hidden">
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                        </button>
+                        <button class="cell-action-btn btn-icon-delete btn-delete-event-icon hidden">
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                        </button>
+                    `;
+                    
+                    buttonContainer.prepend(sortBtnContainer);
+                    flexContainer.appendChild(nameContainer);
+                    flexContainer.appendChild(buttonContainer);
+                    tdName.appendChild(flexContainer);
+                    tr.appendChild(tdName);
+
+                    // 3. 名次輸入格
+                    for (let i = 1; i <= state.rankCount; i++) {
+                        const tdRank = document.createElement('td');
+                        tdRank.className = 'time-cell';
+                        tdRank.dataset.eventIndex = index; //【v1.6.0】
+                        tdRank.dataset.rank = i;
+                        tdRank.id = `cell-${index}-${i}`; //【v1.6.0】
+                        
+                        // 【v1.6.0】 ranks 可能是 undefined 或 object
+                        const timeInMs = (event.ranks && event.ranks[i]) ? event.ranks[i] : null;
+                        const timeText = formatMillis(timeInMs);
+                        
+                        if (timeInMs === undefined || timeInMs === null) {
+                            tdRank.classList.add('empty');
+                        }
+                        
+                        const timeTextNode = document.createElement('div');
+                        timeTextNode.textContent = timeText;
+                        
+                        const swapBtnContainer = document.createElement('div');
+                        swapBtnContainer.id = `swap-btn-container-${index}-${i}`; //【v1.6.0】
+                        swapBtnContainer.className = 'conflict-btn-container';
+                        
+                        tdRank.appendChild(timeTextNode);
+                        tdRank.appendChild(swapBtnContainer);
+                        tr.appendChild(tdRank);
+                    }
+                    tableBody.appendChild(tr);
+                    validateEventRow(index); // 【v1.6.0】渲染完畢後立即驗證
+                });
+            }
+            
+            // (同 v1.4.0) 渲染本機快照按鈕
+            function renderSavedRecordsButtons() {
+                savedRecordsContainer.innerHTML = '';
+                state.savedRecords.forEach((record, index) => {
+                    const item = document.createElement('div');
+                    item.className = 'saved-record-item no-print';
+                    item.innerHTML = `
+                        <button class="saved-record-btn" data-index="${index}" title="載入此快照 (將覆蓋雲端)">
+                            📜 ${record.title}
+                        </button>
+                        <button class="delete-record-btn" data-index="${index}" title="刪除此本機快照">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                        </button>
+                    `;
+                    savedRecordsContainer.appendChild(item);
+                });
+            }
+
+            // --- 核心功能 (Functions) ---
+
+            // 【v1.6.0】更新名次 (寫入 Firebase)
+            function updateRankCount(change) {
+                if (!isFirebaseEnabled) {
+                    showToast('離線模式無法操作', 'error');
+                    return;
+                }
+                const newCount = state.rankCount + change;
+                if (newCount >= state.minRank && newCount <= state.maxRank) {
+                    // state.rankCount = newCount; // 不再直接修改 state
+                    // rankCountDisplay.textContent = state.rankCount; // onValue 會處理
+                    // renderTable(); // onValue 會處理
+                    
+                    // 寫入 Firebase
+                    db.ref(`${APP_DATA_PATH}/rankCount`).set(newCount)
+                        .catch(err => showToast(`名次更新失敗: ${err.message}`, 'error'));
+                }
+            }
+
+            // (同 v1.4.0) 開啟/關閉 Modal
+            function openEventModal() {
+                eventForm.reset();
+                eventModal.classList.remove('hidden');
+                eventModal.classList.add('visible');
+            }
+            function closeEventModal() {
+                eventModal.classList.remove('visible');
+                eventModal.classList.add('hidden');
+            }
+
+            // 【v1.6.0】儲存新項目 (寫入 Firebase)
+            function handleSaveEvent(e) {
+                e.preventDefault();
+                if (!isFirebaseEnabled) {
+                    showToast('離線模式無法操作', 'error');
+                    return;
+                }
+
+                const batchInput = batchEventInput.value.trim();
+                let addedCount = 0;
+                let newEvents = [];
+
+                if (batchInput) {
+                    const eventNames = batchInput.split('\n').filter(name => name.trim() !== '');
+                    eventNames.forEach(name => {
+                        newEvents.push({
+                            name: name.trim(),
+                            ranks: {} // Firebase 中空物件建議用 {}
+                        });
+                    });
+                    addedCount = eventNames.length;
+                } else {
+                    const customName = inputCustomName.value.trim();
+                    let eventName = '';
+                    if (customName) { eventName = customName; }
+                    else { eventName = `${selectGrade.value}${selectGender.value}${selectEvent.value}`; }
+                    
+                    if (eventName) {
+                        newEvents.push({ name: eventName, ranks: {} });
+                        addedCount = 1;
+                    }
+                }
+                
+                if (addedCount > 0) {
+                    // 取得目前的 events 陣列，附加新資料後，一次寫回
+                    const currentEvents = Array.isArray(state.events) ? [...state.events] : [];
+                    const updatedEvents = currentEvents.concat(newEvents);
+                    
+                    db.ref(`${APP_DATA_PATH}/events`).set(updatedEvents)
+                        .then(() => {
+                            closeEventModal();
+                            showToast(`成功新增 ${addedCount} 個項目！`);
+                        })
+                        .catch(err => showToast(`新增失敗: ${err.message}`, 'error'));
+
+                } else {
+                    showToast('請至少填寫一個項目', 'error');
+                }
+            }
+
+            // 【v1.6.0】刪除項目 (寫入 Firebase)
+            function deleteEvent(eventIndex) {
+                if (!isFirebaseEnabled) {
+                    showToast('離線模式無法操作', 'error');
+                    return;
+                }
+                
+                const currentEvents = [...state.events];
+                currentEvents.splice(eventIndex, 1);
+                
+                // 【v1.6.0】 
+                // Firebase 陣列中刪除
+                // 註：若陣列中有 null，Firebase 會壓縮陣列，導致 index 變動。
+                // 為了安全，我們總是 set 回完整的陣列。
+                db.ref(`${APP_DATA_PATH}/events`).set(currentEvents)
+                    .then(() => showToast('項目已刪除'))
+                    .catch(err => showToast(`刪除失敗: ${err.message}`, 'error'));
+            }
+
+            // 【v1.6.0】刪除所有項目 (寫入 Firebase)
+            function deleteAllEvents() {
+                if (!isFirebaseEnabled) {
+                    showToast('離線模式無法操作', 'error');
+                    return;
+                }
+                db.ref(`${APP_DATA_PATH}/events`).set([])
+                    .then(() => showToast('已刪除所有項目'))
+                    .catch(err => showToast(`刪除失敗: ${err.message}`, 'error'));
+            }
+
+            // (同 v1.4.0) 切換編輯模式 (純 DOM 操作)
+            function toggleEditMode(tr, save = false) {
+                const spanName = tr.querySelector('.event-name');
+                const inputName = tr.querySelector('.event-name-input');
+                const btnToggleEdit = tr.querySelector('.btn-toggle-edit-icon');
+                const btnSaveName = tr.querySelector('.btn-save-name-icon');
+                const btnDeleteEvent = tr.querySelector('.btn-delete-event-icon');
+                spanName.classList.toggle('hidden', !save);
+                inputName.classList.toggle('hidden', save);
+                btnToggleEdit.classList.toggle('hidden', !save);
+                btnSaveName.classList.toggle('hidden', save);
+                btnDeleteEvent.classList.toggle('hidden', save);
+                if (!save) inputName.focus();
+            }
+
+            // 【v1.6.0】儲存項目名稱 (寫入 Firebase)
+            function saveEventName(eventIndex, tr) {
+                if (!isFirebaseEnabled) {
+                    showToast('離線模式無法操作', 'error');
+                    return;
+                }
+
+                const inputName = tr.querySelector('.event-name-input');
+                const newName = inputName.value.trim();
+                if (!newName) { showToast('項目名稱不可為空', 'error'); return; }
+
+                // 【v1.6.0】只更新該項目的名稱，效率高
+                const namePath = `${APP_DATA_PATH}/events/${eventIndex}/name`;
+                db.ref(namePath).set(newName)
+                    .then(() => {
+                        // 雖然 onValue 會更新，但 DOM 狀態要手動切換
+                        tr.querySelector('.event-name').textContent = newName;
+                        toggleEditMode(tr, true);
+                        showToast('項目名稱已更新');
+                    })
+                    .catch(err => showToast(`更新失敗: ${err.message}`, 'error'));
+            }
+
+            // 【v1.6.0】開啟時間輸入 (eventIndex)
+            function openTimeInputModal(eventIndex, rank) {
+                const event = state.events[eventIndex];
+                if (!event) return;
+                state.editingTime = { eventIndex, rank };
+                timeModalTitle.textContent = `輸入 ${event.name} (第 ${rank} 名)`;
+                
+                const ms = (event.ranks && event.ranks[rank]) ? event.ranks[rank] : null;
+                
+                if (ms !== undefined && ms !== null) {
+                    const totalCentiseconds = Math.round(ms / 10);
+                    timeMin.value = Math.floor(totalCentiseconds / 6000);
+                    const remainingCentiseconds = totalCentiseconds % 6000;
+                    timeSec.value = Math.floor(remainingCentiseconds / 100);
+                    timeCs.value = remainingCentiseconds % 100;
+                } else {
+                    timeInputForm.reset();
+                }
+                timeInputModal.classList.remove('hidden');
+                timeInputModal.classList.add('visible');
+                timeMin.focus();
+            }
+            
+            // (同 v1.4.0)
+            function closeTimeInputModal() {
+                timeInputModal.classList.remove('visible');
+                timeInputModal.classList.add('hidden');
+                state.editingTime = { eventIndex: null, rank: null };
+                if (state.deleteTimeTimeout) { clearTimeout(state.deleteTimeTimeout); state.deleteTimeTimeout = null; }
+                state.deleteTimeConfirmation = false;
+                btnDeleteTime.textContent = '刪除';
+                btnDeleteTime.classList.remove('bg-red-500', 'text-white');
+                btnDeleteTime.classList.add('bg-red-100', 'text-red-700');
+            }
+
+            // 【v1.6.0】儲存時間 (寫入 Firebase)
+            function handleSaveTime(e) {
+                e.preventDefault();
+                if (!isFirebaseEnabled) {
+                    showToast('離線模式無法操作', 'error');
+                    return;
+                }
+
+                const { eventIndex, rank } = state.editingTime;
+                if (eventIndex === null || rank === null) return;
+                
+                const totalMs = parseTime(timeMin.value, timeSec.value, timeCs.value);
+                
+                // 【v1.6.0】解決同步問題 (Req #2)
+                // 我們只更新這一個名次的時間
+                // 這樣裁判A更新第1名，裁判B更新第2名，不會互相覆蓋
+                const timePath = `${APP_DATA_PATH}/events/${eventIndex}/ranks/${rank}`;
+                
+                db.ref(timePath).set(totalMs)
+                    .then(() => {
+                        closeTimeInputModal();
+                        // onValue 會自動觸發 validateEventRow (因為 renderTable 會跑)
+                    })
+                    .catch(err => showToast(`儲存時間失敗: ${err.message}`, 'error'));
+            }
+
+            // 【v1.6.0】刪除時間 (寫入 Firebase)
+            function handleDeleteTimeInternalLogic() {
+                if (!isFirebaseEnabled) {
+                    showToast('離線模式無法操作', 'error');
+                    return;
+                }
+
+                const { eventIndex, rank } = state.editingTime;
+                if (eventIndex === null || rank === null) return;
+                
+                // 【v1.6.0】將該節點設為 null (等於刪除)
+                const timePath = `${APP_DATA_PATH}/events/${eventIndex}/ranks/${rank}`;
+                
+                db.ref(timePath).set(null) // 或 .remove()
+                    .then(() => {
+                        closeTimeInputModal();
+                        showToast('時間已清除');
+                        // onValue 會自動觸發 validateEventRow
+                    })
+                    .catch(err => showToast(`刪除時間失敗: ${err.message}`, 'error'));
+            }
+
+            /**
+             * 【v1.6.0】時間衝突驗證
+             * (此函式邏輯與 v1.5.0 相同，只修改 eventId -> eventIndex)
+             */
+            function validateEventRow(eventIndex) {
+                const event = state.events[eventIndex];
+                if (!event) return;
+                const ranks = event.ranks || {}; // 【v1.6.0】 確保 ranks 是物件
+                let lastValidTime = -1;
+                let lastValidRank = 0;
+                let errors = []; 
+                let conflictRanks = new Set(); 
+                let allRanksWithTime = []; 
+
+                // 1. 清除舊狀態
+                for (let i = 1; i <= state.rankCount; i++) {
+                    const cell = document.getElementById(`cell-${eventIndex}-${i}`);
+                    if (cell) {
+                        cell.classList.remove('error');
+                        const swapContainer = document.getElementById(`swap-btn-container-${eventIndex}-${i}`);
+                        if (swapContainer) swapContainer.innerHTML = '';
+                    }
+                }
+                const sortContainer = document.getElementById(`sort-btn-container-${eventIndex}`);
+                if (sortContainer) sortContainer.innerHTML = '';
+
+                // 2. 收集衝突
+                for (let i = 1; i <= state.rankCount; i++) {
+                    const currentTime = ranks[i]; // 從物件讀取
+                    if (currentTime !== undefined && currentTime !== null) {
+                        allRanksWithTime.push({ rank: i, time: currentTime }); 
+                        
+                        if (lastValidTime !== -1 && currentTime < lastValidTime) {
+                            errors.push({ rank1: lastValidRank, rank2: i });
+                            conflictRanks.add(lastValidRank);
+                            conflictRanks.add(i);
+                        }
+                        lastValidTime = currentTime;
+                        lastValidRank = i;
+                    }
+                }
+
+                // 3. 標記錯誤
+                conflictRanks.forEach(rank => {
+                    const cell = document.getElementById(`cell-${eventIndex}-${rank}`);
+                    if (cell) cell.classList.add('error');
+                });
+
+                // 4. 渲染按鈕
+                if (errors.length === 0) return; 
+
+                if (conflictRanks.size === 2) {
+                    const { rank1, rank2 } = errors[0];
+                    const swapContainer = document.getElementById(`swap-btn-container-${eventIndex}-${rank2}`);
+                    if (swapContainer) {
+                        swapContainer.innerHTML = createSwapButton(eventIndex, rank1, rank2);
+                    }
+                } else if (conflictRanks.size > 2) {
+                    errors.forEach(({ rank1, rank2 }) => {
+                        const swapContainer = document.getElementById(`swap-btn-container-${eventIndex}-${rank2}`);
+                        if (swapContainer) {
+                            swapContainer.innerHTML = createSwapButton(eventIndex, rank1, rank2);
+                        }
+                    });
+                    if (sortContainer && allRanksWithTime.length > 1) {
+                        sortContainer.innerHTML = createSortButton(eventIndex);
+                    }
+                }
+            }
+
+            // --- v1.5.0 衝突處理輔助函式 (修改 eventId -> eventIndex) ---
+            
+            function createSwapButton(eventIndex, rank1, rank2) {
+                const swapIcon = `<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M7 16V4m0 12l-3-3m3 3l3-3m6 3v12m0-12l3-3m-3 3l-3-3"></path></svg>`;
+                return `
+                    <button class="conflict-btn btn-swap" 
+                            data-event-index="${eventIndex}" 
+                            data-rank1="${rank1}" 
+                            data-rank2="${rank2}" 
+                            title="與第 ${rank1} 名互換">
+                        ${swapIcon} 互換
+                    </button>
+                `;
+            }
+            
+            function createSortButton(eventIndex) {
+                const sortIcon = `<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4h13M3 8h9M3 12h9m-9 4h9m5-4v8m0 0l-3-3m3 3l3-3"></path></svg>`;
+                return `
+                    <button class="cell-sort-btn btn-sort-row" 
+                            data-event-index="${eventIndex}" 
+                            title="自動排序此行所有成績">
+                        ${sortIcon}
+                    </button>
+                `;
+            }
+
+            // 【v1.6.0】執行時間互換 (寫入 Firebase)
+            function swapTimes(eventIndex, rank1, rank2) {
+                if (!isFirebaseEnabled) {
+                    showToast('離線模式無法操作', 'error');
+                    return;
+                }
+                const event = state.events[eventIndex];
+                if (!event) return;
+
+                const time1 = (event.ranks && event.ranks[rank1]) ? event.ranks[rank1] : null;
+                const time2 = (event.ranks && event.ranks[rank2]) ? event.ranks[rank2] : null;
+
+                // 【v1.6.0】使用 update 一次更新兩個節點
+                const updates = {};
+                updates[`${APP_DATA_PATH}/events/${eventIndex}/ranks/${rank1}`] = time2;
+                updates[`${APP_DATA_PATH}/events/${eventIndex}/ranks/${rank2}`] = time1;
+
+                db.ref().update(updates)
+                    .catch(err => showToast(`互換失敗: ${err.message}`, 'error'));
+                // onValue 會自動處理後續
+            }
+
+            /**
+             * 【v1.6.0】執行自動排序 (Req #3 Bug Fix)
+             * - 修正 v1.5.1 的邏輯並改為寫入 Firebase
+             */
+            function autoSortRow(eventIndex) {
+                if (!isFirebaseEnabled) {
+                    showToast('離線模式無法操作', 'error');
+                    return;
+                }
+                const event = state.events[eventIndex];
+                if (!event) return;
+                
+                // 1. 抓出所有有時間的 {rank, time}
+                let ranksWithTime = [];
+                const currentRanks = event.ranks || {};
+                
+                // 【v1.6.0 修正邏輯】
+                // 我們只排序 "有時間" 的 "原始名次"
+                // e.g., ranks: { 1: 15.0, 3: 13.0, 5: 14.0 }
+                for (let rank in currentRanks) {
+                    const time = currentRanks[rank];
+                    if (time !== undefined && time !== null) {
+                        ranksWithTime.push({ rank: parseInt(rank, 10), time: time });
+                    }
+                }
+                
+                if (ranksWithTime.length < 2) return; // 沒東西可排
+
+                // 2. 取得 "原始" 的 "名次" 列表 (e.g., [1, 3, 5])
+                const originalRanks = ranksWithTime.map(item => item.rank);
+
+                // 3. 取得 "時間" 列表並 "排序" (e.g., [15.0, 13.0, 14.0] -> [13.0, 14.0, 15.0])
+                const sortedTimes = ranksWithTime.map(item => item.time).sort((a, b) => a - b);
+                
+                // 4. 準備一個新的 ranks 物件
+                const newRanksObject = { ...currentRanks };
+                
+                // 5. 將 "排序後的時間" 依序塞回 "原始的名次"
+                // e.g., newRanksObject[1] = 13.0
+                //      newRanksObject[3] = 14.0
+                //      newRanksObject[5] = 15.0
+                originalRanks.forEach((rank, index) => {
+                    newRanksObject[rank] = sortedTimes[index];
+                });
+
+                // 6. 寫回 Firebase
+                const ranksPath = `${APP_DATA_PATH}/events/${eventIndex}/ranks`;
+                db.ref(ranksPath).set(newRanksObject)
+                    .then(() => showToast(`項目 "${event.name}" 已自動排序`))
+                    .catch(err => showToast(`排序失敗: ${err.message}`, 'error'));
+            }
+
+
+            // (同 v1.4.0) SaveModal funcs
+            function openSaveRecordModal() {
+                recordTitleInput.value = '';
+                saveRecordModal.classList.remove('hidden');
+                saveRecordModal.classList.add('visible');
+                recordTitleInput.focus();
+            }
+            function closeSaveRecordModal() {
+                saveRecordModal.classList.remove('visible');
+                saveRecordModal.classList.add('hidden');
+            }
+            
+            // 【v1.6.0】儲存 "本機快照" (Req #5)
+            function handleSaveRecord(e) {
+                e.preventDefault();
+                const title = recordTitleInput.value.trim();
+                if (!title) { showToast('請輸入紀錄標題', 'error'); return; }
+                
+                // 【v1.6.0】儲存的是當前 "state" (即雲端資料的鏡像)
+                const recordData = {
+                    events: JSON.parse(JSON.stringify(state.events)),
+                    rankCount: state.rankCount
+                };
+                
+                state.savedRecords.push({ title: title, data: recordData });
+                saveStateToLocalStorage(); // 存到 localStorage
+                renderSavedRecordsButtons();
+                closeSaveRecordModal();
+                showToast(`已儲存本機快照: ${title}`);
+            }
+            
+            // 【v1.6.0】"載入" 本機快照 (-> 覆蓋 Firebase)
+            function loadSavedRecord(index) {
+                if (!isFirebaseEnabled) {
+                    showToast('離線模式無法操作', 'error');
+                    return;
+                }
+                if (index < 0 || index >= state.savedRecords.length) return;
+                
+                const record = state.savedRecords[index];
+                const dataToUpload = record.data; // { events: [...], rankCount: ... }
+                
+                // 顯示確認視窗
+                showCustomConfirm(
+                    '載入本機快照',
+                    `確定要載入 "${record.title}" 嗎？\n這將會覆蓋雲端資料，讓所有人同步到此版本。`,
+                    () => {
+                        db.ref(APP_DATA_PATH).set(dataToUpload)
+                            .then(() => {
+                                showToast(`已載入快照: ${record.title} (雲端同步中)`, 'success');
+                                // onValue 會自動更新畫面
+                            })
+                            .catch(err => showToast(`載入失敗: ${err.message}`, 'error'));
+                    }
+                );
+            }
+
+            // 【v1.6.0】刪除 "本機快照"
+            function deleteSavedRecord(index) {
+                if (index < 0 || index >= state.savedRecords.length) return;
+                const title = state.savedRecords[index].title;
+                state.savedRecords.splice(index, 1);
+                saveStateToLocalStorage(); // 更新 localStorage
+                renderSavedRecordsButtons();
+                showToast(`已刪除本機快照: ${title}`);
+            }
+
+            // (v1.5.0) 操作 Modal 功能
+            function openActionsModal() {
+                actionsModal.classList.remove('hidden');
+                actionsModal.classList.add('visible');
+            }
+            function closeActionsModal() {
+                actionsModal.classList.remove('visible');
+                actionsModal.classList.add('hidden');
+            }
+
+            // (v1.5.0) 匯出 HTML (邏輯不變)
+            function handleExportHtml() {
+                if (!state.events || state.events.length === 0) {
+                    showToast('沒有項目可匯出', 'error');
+                    return;
+                }
+                try {
+                    const htmlContent = generateStaticHtml();
+                    const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
+                    const link = document.createElement('a');
+                    link.href = URL.createObjectURL(blob);
+                    const timestamp = new Date().toISOString().slice(0, 16).replace('T', '_').replace(':', '-');
+                    link.download = `蓮小終點計時組_報表_${timestamp}.html`;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    URL.revokeObjectURL(link.href);
+                    showToast('HTML 靜態報表已下載', 'success');
+                } catch (err) {
+                    console.error('HTML 下載失敗:', err);
+                    showToast('HTML 下載失敗', 'error');
+                }
+            }
+
+            // (v1.5.0) 產生靜態 HTML (微調 event.ranks 讀取)
+            function generateStaticHtml() {
+                const rankCount = state.rankCount;
+                let ths = `<th style="padding: 8px 10px; text-align: center; border: 1px solid #ccc; width: 50px;">序號</th>`;
+                ths += `<th style="padding: 8px 10px; text-align: left; border: 1px solid #ccc;">項目</th>`;
+                for (let i = 1; i <= rankCount; i++) {
+                    ths += `<th style="padding: 8px 10px; text-align: center; border: 1px solid #ccc; min-width: 80px;">${i} 名</th>`;
+                }
+                let trs = '';
+                
+                (state.events || []).forEach((event, index) => {
+                    if (!event) return; // v1.6.0
+                    const eventRanks = event.ranks || {}; // v1.6.0
+
+                    let tds = `<td style="padding: 6px 10px; text-align: center; border: 1px solid #ccc;">${index + 1}</td>`;
+                    tds += `<td style="padding: 6px 10px; text-align: left; border: 1px solid #ccc; font-weight: 500;">${event.name}</td>`;
+                    
+                    for (let i = 1; i <= rankCount; i++) {
+                        const timeInMs = eventRanks[i];
+                        const timeText = formatMillis(timeInMs);
+                        let isError = false;
+                        if (timeInMs !== undefined && timeInMs !== null) {
+                            let lastValidTime = -1;
+                            for (let j = 1; j <= i; j++) {
+                                const prevTime = eventRanks[j];
+                                if (prevTime !== undefined && prevTime !== null) {
+                                    if (j === i && prevTime < lastValidTime) isError = true;
+                                    lastValidTime = prevTime;
+                                }
+                            }
+                        }
+                        const errorStyle = isError ? 'background-color: #fee2e2; color: #ef4444; font-weight: bold;' : '';
+                        tds += `<td style="padding: 6px 10px; text-align: center; border: 1px solid #ccc; font-family: 'Courier New', monospace; ${errorStyle}">
+                            ${timeText}
+                        </td>`;
+                    }
+                    const bgStyle = (index % 2 !== 0) ? 'background-color: #f9fafb;' : '';
+                    trs += `<tr style="${bgStyle}">${tds}</tr>`;
+                });
+                const staticStyles = `
+                    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans TC', sans-serif; background-color: #f3f4f6; padding: 20px; font-size: 14px; }
+                    .container { max-width: 1200px; margin: 0 auto; background-color: white; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); overflow: hidden; }
+                    h1 { text-align: center; margin: 20px 0; font-size: 24px; color: #333; }
+                    table { width: 100%; border-collapse: collapse; }
+                    thead { background-color: #e5e7eb; color: #1f2937; }
+                `;
+                return `
+                    <!DOCTYPE html>
+                    <html lang="zh-Hant">
+                    <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+                        <title>終點計時報表</title><style>${staticStyles}</style>
+                    </head><body><div class="container">
+                        <h1>🏅 蓮小終點計時組 - 靜態報表</h1>
+                        <table><thead><tr>${ths}</tr></thead><tbody>${trs}</tbody></table>
+                    </div></body></html>
+                `;
+            }
+
+            // --- 事件監聽 (Event Listeners) ---
+            
+            btnRankMinus.addEventListener('click', () => updateRankCount(-1));
+            btnRankPlus.addEventListener('click', () => updateRankCount(1));
+            btnOpenModal.addEventListener('click', openEventModal);
+            btnCloseModal.addEventListener('click', closeEventModal);
+            btnCancelModal.addEventListener('click', closeEventModal);
+            eventModal.addEventListener('click', (e) => e.target === eventModal && closeEventModal());
+            eventForm.addEventListener('submit', handleSaveEvent);
+            timeInputForm.addEventListener('submit', handleSaveTime);
+            btnCancelTime.addEventListener('click', closeTimeInputModal);
+            timeInputModal.addEventListener('click', (e) => e.target === timeInputModal && closeTimeInputModal());
+
+            // (同 v1.4.0) 刪除按鈕
+            btnDeleteTime.addEventListener('click', () => {
+                if (!state.deleteTimeConfirmation) {
+                    state.deleteTimeConfirmation = true;
+                    btnDeleteTime.textContent = '確認刪除？';
+                    btnDeleteTime.classList.remove('bg-red-100', 'text-red-700');
+                    btnDeleteTime.classList.add('bg-red-500', 'text-white');
+                    state.deleteTimeTimeout = setTimeout(() => {
+                        state.deleteTimeConfirmation = false;
+                        btnDeleteTime.textContent = '刪除';
+                        btnDeleteTime.classList.remove('bg-red-500', 'text-white');
+                        btnDeleteTime.classList.add('bg-red-100', 'text-red-700');
+                        state.deleteTimeTimeout = null;
+                    }, 3000);
+                } else {
+                    if (state.deleteTimeTimeout) { clearTimeout(state.deleteTimeTimeout); state.deleteTimeTimeout = null; }
+                    handleDeleteTimeInternalLogic();
+                }
+            });
+
+            /**
+             * 【v1.6.0】表格主體事件代理 (eventIndex)
+             */
+            tableBody.addEventListener('click', (e) => {
+                const target = e.target;
+                const tr = target.closest('tr');
+                if (!tr) return; 
+                const eventIndex = parseInt(tr.dataset.eventIndex, 10); //【v1.6.0】
+                if (isNaN(eventIndex)) return;
+
+                const timeCell = target.closest('.time-cell');
+                if (timeCell && !target.closest('.conflict-btn')) { 
+                    openTimeInputModal(eventIndex, parseInt(timeCell.dataset.rank, 10));
+                    return;
+                }
+                const btnToggle = target.closest('.btn-toggle-edit-icon');
+                if (btnToggle) {
+                    toggleEditMode(tr, false);
+                    return;
+                }
+                const btnSave = target.closest('.btn-save-name-icon');
+                if (btnSave) {
+                    saveEventName(eventIndex, tr);
+                    return;
+                }
+                const btnDelete = target.closest('.btn-delete-event-icon');
+                if (btnDelete) {
+                    showCustomConfirm(
+                        '刪除項目', 
+                        `確定要刪除項目 "${tr.querySelector('.event-name').textContent}" 嗎？ (雲端將同步刪除)`, 
+                        () => { deleteEvent(eventIndex); }
+                    );
+                    return;
+                }
+                const btnSwap = target.closest('.btn-swap');
+                if (btnSwap) {
+                    const { eventIndex, rank1, rank2 } = btnSwap.dataset;
+                    swapTimes(parseInt(eventIndex), parseInt(rank1), parseInt(rank2));
+                    return;
+                }
+                const btnSort = target.closest('.btn-sort-row');
+                if (btnSort) {
+                    const { eventIndex } = btnSort.dataset;
+                    autoSortRow(parseInt(eventIndex));
+                    return;
+                }
+            });
+
+            // (v1.5.0) 表頭按鈕
+            tableHead.addEventListener('click', (e) => {
+                const btnOpen = e.target.closest('#btn-open-actions-modal');
+                if (btnOpen) {
+                    openActionsModal();
+                }
+            });
+            
+            // (v1.5.0) 操作 Modal 監聽
+            btnCloseActionsModal.addEventListener('click', closeActionsModal);
+            actionsModal.addEventListener('click', (e) => e.target === actionsModal && closeActionsModal());
+            
+            btnActionSave.addEventListener('click', () => {
+                closeActionsModal();
+                if (!state.events || state.events.length === 0) {
+                    showToast('沒有項目可儲存', 'error');
+                    return;
+                }
+                openSaveRecordModal();
+            });
+            
+            btnActionExportHtml.addEventListener('click', () => {
+                closeActionsModal();
+                handleExportHtml();
+            });
+
+            btnActionDeleteAll.addEventListener('click', () => {
+                closeActionsModal();
+                if (!state.events || state.events.length === 0) {
+                    showToast('目前沒有項目可刪除', 'error');
+                    return;
+                }
+                showCustomConfirm(
+                    '刪除全部項目',
+                    '您確定要刪除「所有」項目嗎？(雲端將同步刪除)',
+                    () => { deleteAllEvents(); }
+                );
+            });
+
+            // (v1.4.0) 本機快照區監聽
+            savedRecordsContainer.addEventListener('click', (e) => {
+                const target = e.target;
+                const loadBtn = target.closest('.saved-record-btn');
+                const deleteBtn = target.closest('.delete-record-btn');
+                
+                if (loadBtn) {
+                    const index = parseInt(loadBtn.dataset.index, 10);
+                    if (!isNaN(index)) loadSavedRecord(index); //【v1.6.0】
+                    return;
+                }
+                
+                if (deleteBtn) {
+                    const index = parseInt(deleteBtn.dataset.index, 10);
+                    if (isNaN(index)) return;
+                    const title = state.savedRecords[index]?.title || '此紀錄';
+                    showCustomConfirm(
+                        '刪除本機快照',
+                        `確定要刪除 "${title}" 這筆本機快照嗎？ (不影響雲端)`,
+                        () => { deleteSavedRecord(index); } //【v1.6.0】
+                    );
+                    return;
+                }
+            });
+
+            // (v1.4.0)
+            saveRecordForm.addEventListener('submit', handleSaveRecord);
+            btnCancelSaveRecord.addEventListener('click', closeSaveRecordModal);
+            saveRecordModal.addEventListener('click', (e) => e.target === saveRecordModal && closeSaveRecordModal());
+            
+            // (v1.4.0)
+            customConfirmOk.addEventListener('click', () => {
+                if (state.confirmCallback && !customConfirmOk.disabled) {
+                    state.confirmCallback();
+                }
+                hideCustomConfirm();
+            });
+            customConfirmCancel.addEventListener('click', hideCustomConfirm);
+            customConfirmModal.addEventListener('click', (e) => e.target === customConfirmModal && hideCustomConfirm());
+
+
+            // --- 【v1.6.0】Firebase 即時監聽 ---
+            
+            function setupFirebaseListeners() {
+                if (!isFirebaseEnabled) return;
+
+                // 監聽連線狀態
+                const connectedRef = db.ref(".info/connected");
+                connectedRef.on("value", (snap) => {
+                    if (snap.val() === true) {
+                        connectionStatusContainer.innerHTML = `
+                            <div class="connection-status status-connected">
+                                <div class="status-dot"></div>
+                                <span>已連線 (即時同步)</span>
+                            </div>`;
+                    } else {
+                        connectionStatusContainer.innerHTML = `
+                            <div class="connection-status status-disconnected">
+                                <div class="status-dot"></div>
+                                <span>連線中斷...</span>
+                            </div>`;
+                    }
+                });
+
+                // 監聽主資料節點 (Req #4)
+                const appDataRef = db.ref(APP_DATA_PATH);
+                appDataRef.on("value", (snapshot) => {
+                    console.log("Firebase 資料已更新！");
+                    const data = snapshot.val();
+                    
+                    if (data) {
+                        // 更新本機 state 鏡像
+                        state.events = data.events || [];
+                        state.rankCount = data.rankCount || 7;
+                    } else {
+                        // Firebase 上沒有資料
+                        state.events = [];
+                        state.rankCount = 7;
+                    }
+
+                    // 使用新資料重新渲染整個表格
+                    rankCountDisplay.textContent = state.rankCount;
+                    renderTable(); // 這會自動觸發 renderTableBody 和 validateEventRow
+
+                }, (error) => {
+                    console.error("Firebase 讀取失敗:", error);
+                    showToast('資料同步失敗，請檢查網路連線', 'error');
+                });
+            }
+
+            // --- 初始化 ---
+            function init() {
+                loadStateFromLocalStorage(); // 載入 "本機快照"
+                renderSavedRecordsButtons(); // 渲染 "本機快照" 按鈕
+                
+                if (isFirebaseEnabled) {
+                    setupFirebaseListeners(); // 啟動 Firebase 監聽
+                    showToast('歡迎使用 蓮小終點計時組 v1.6.0 (雲端版)', 'success');
+                } else {
+                    // 離線模式
+                    connectionStatusContainer.innerHTML = `
+                        <div class="connection-status status-disconnected">
+                            <div class="status-dot"></div>
+                            <span>離線模式 (請檢查 Config)</span>
+                        </div>`;
+                    renderTable(); // 使用預設 state 渲染
+                    showToast('Firebase 未設定，以離線模式啟動', 'error');
+                }
+            }
+
+Done:
+            init();
+        });
+    </script>
+</body>
+</html>
