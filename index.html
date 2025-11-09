@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>蓮小終點計時組 v1.7.0 (Firebase)</title>
+    <title>蓮小終點計時組 v1.8.1 (Firebase)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
@@ -52,23 +52,42 @@
         .toast-success { background-color: #28a745; color: white; }
         .toast-error { background-color: #dc3545; color: white; }
 
-        /* ▼▼▼ (v1.7.0) 需求 #1：您可以在這裡調整成績的字體大小 ▼▼▼ */
+        /* (同 v1.7.0) */
         .time-cell { 
             cursor: pointer; 
             text-align: center; 
             padding: 12px 6px; 
             font-family: 'monospace', 'Courier New'; 
-            font-size: 1.2rem; /* 👈 (v1.7.0) 調整字體大小 (原 1.1rem) */
+            font-size: 1.2rem; 
             transition: background-color 0.2s ease, color 0.2s ease; 
             min-width: 100px; 
             vertical-align: top; 
         }
-        /* ▲▲▲ (v1.7.0) 調整完畢 ▲▲▲ */
 
-        .time-cell:hover { background-color: #eff6ff; }
-        .time-cell.empty { color: #9ca3af; }
+        /* * ▼▼▼ (v1.8.1) 需求 #3：修正 Green Row Hover Bug ▼▼▼
+         * 舊版: .time-cell:hover { background-color: #eff6ff; }
+         * 新版: 只有在 TR "不是" 高亮時，TD 才有 hover 效果。
+         * 這可以防止 TD 的 hover 覆蓋 TR 的高亮 hover。
+         */
+        tr:not(.row-complete-highlight) .time-cell:hover { 
+            background-color: #eff6ff; /* (blue-50) */
+        }
+        /* * ▲▲▲ (v1.8.1) 修正完畢 ▲▲▲ */
+
+
+        /* (同 v1.8.0) */
+        .time-cell.empty { } 
         .time-cell.error { color: #ef4444; font-weight: bold; background-color: #fee2e2; animation: pulse-red 0.8s ease-in-out; }
         @keyframes pulse-red { 0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); } 70% { box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); } 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); } }
+        
+        /* (同 v1.8.0) 名次 placeholder */
+        .time-cell-placeholder {
+            color: #d1d5db; /* Tailwind gray-300 */
+            font-size: 1.3rem; 
+            font-weight: 600;
+            line-height: 1.4; 
+        }
+        
         .event-name-input { border: 1px solid #3b82f6; border-radius: 4px; padding: 4px 8px; width: 95%; }
         .cell-action-btn { background: none; border: none; cursor: pointer; padding: 4px; border-radius: 6px; transition: background-color 0.2s; }
         .cell-action-btn:hover { background-color: #e5e7eb; }
@@ -79,7 +98,7 @@
         .header-action-btn { display: inline-flex; align-items: center; justify-content: center; background-color: #4f46e5; color: white; font-weight: 500; padding: 6px; border-radius: 6px; transition: background-color 0.2s; width: 32px; height: 32px; cursor: pointer; font-size: 1.25rem; line-height: 1; }
         .header-action-btn:hover { background-color: #4338ca; }
         
-        /* (v1.7.0) 調整快照按鈕 (原 v1.6.0 .saved-record-item) */
+        /* (同 v1.7.0) 快照按鈕 */
         .saved-record-item { display: flex; align-items: center; background-color: #fdfba2; border: 1px solid #e7d98b; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.05); transition: all 0.2s ease; }
         .saved-record-item:hover { transform: translateY(-1px); box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
         .saved-record-btn { background: none; border: none; color: #725a03; padding: 4px 10px; font-size: 0.875rem; font-weight: 500; cursor: pointer; }
@@ -93,13 +112,7 @@
         .conflict-btn-container { display: flex; justify-content: center; align-items: center; gap: 4px; margin-top: 4px; }
         .conflict-btn { background-color: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; border-radius: 6px; padding: 2px 4px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; font-size: 0.75rem; font-weight: 500; transition: background-color 0.2s, color 0.2s; }
         .conflict-btn:hover { background-color: #fee2e2; color: #991b1b; }
-        
-        /* (v1.7.0) 需求 #3：微調互換圖示大小 */
-        .conflict-btn svg { 
-            width: 1rem; /* 👈 (v1.7.0) 放大圖示 (原 0.875rem) */
-            height: 1rem; /* 👈 (v1.7.0) 放大圖示 */
-        }
-        
+        .conflict-btn svg { width: 1rem; height: 1rem; }
         .cell-sort-btn { background-color: #fef2f2; color: #b91c1c; border: none; padding: 4px; border-radius: 6px; transition: background-color 0.2s; cursor: pointer; }
         .cell-sort-btn:hover { background-color: #fee2e2; }
         .cell-sort-btn svg { width: 1.25rem; height: 1.25rem; }
@@ -110,18 +123,34 @@
             font-size: 0.875rem; padding: 4px 10px;
             border-radius: 12px; font-weight: 500;
         }
-        .status-dot {
-            width: 10px; height: 10px; border-radius: 50%;
-            animation: pulse-animation 2s infinite;
-        }
+        .status-dot { width: 10px; height: 10px; border-radius: 50%; animation: pulse-animation 2s infinite; }
         .status-connected { background-color: #dcfce7; color: #166534; }
         .status-connected .status-dot { background-color: #22c55e; }
         .status-disconnected { background-color: #fee2e2; color: #991b1b; }
         .status-disconnected .status-dot { background-color: #ef4444; }
-        @keyframes pulse-animation {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
+        @keyframes pulse-animation { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+
+        /* (v1.8.0) 管理者模式 Badge */
+        .admin-status {
+            display: inline-flex; align-items: center; gap: 5px;
+            font-size: 0.875rem; padding: 4px 10px; border-radius: 12px; 
+            font-weight: 500;
+            background-color: #f3e8ff; /* Tailwind purple-100 */
+            color: #581c87; /* Tailwind purple-900 */
+            border: 1px solid #e9d5ff; /* Tailwind purple-200 */
         }
+        .admin-status svg {
+            width: 1rem; height: 1rem;
+        }
+        
+        /* (v1.8.0) 項目完成高亮 */
+        .row-complete-highlight {
+            background-color: #dcfce7 !important; /* 亮綠色 (Tailwind green-100) */
+        }
+        .row-complete-highlight:hover {
+            background-color: #bbf7d0 !important; /* (Tailwind green-200) */
+        }
+
 
         /* (同 v1.4.0) 列印樣式 */
         @media print {
@@ -129,7 +158,6 @@
             header, footer, #event-modal, #time-input-modal, #save-record-modal, #custom-confirm-modal, #actions-modal, #btn-open-modal, #toast-container, #password-modal, .no-print {
                 display: none !important;
             }
-            /* ... (其他列印樣式保持不變) ... */
             .container { max-w-full; padding: 0; margin: 0; }
             .bg-white { box-shadow: none; border-radius: 0; overflow: visible; }
             .overflow-x-auto { overflow: visible; }
@@ -137,10 +165,16 @@
             th, td { border: 1px solid #ccc; padding: 6px 8px; font-size: 11px; }
             thead { background-color: #e5e7eb !important; color: #1f2937 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
             tr { page-break-inside: avoid; }
-            /* (v1.7.0) 配合字體放大，微調列印字體 */
             .time-cell { font-size: 11.5px; min-width: auto; padding: 6px 4px; }
+            .time-cell-placeholder { display: none; }
             .event-name-input, .cell-action-btn, .conflict-btn-container, .cell-sort-btn { display: none; }
             .event-name { font-size: 12px; }
+            
+            .row-complete-highlight {
+                background-color: #dcfce7 !important;
+                -webkit-print-color-adjust: exact; 
+                print-color-adjust: exact;
+            }
         }
     </style>
 </head>
@@ -153,12 +187,19 @@
         <header class="mb-6 flex flex-col sm:flex-row justify-between items-center gap-4">
             
             <div class="flex items-center gap-3 flex-wrap">
-                <h1 class="text-3xl font-bold text-gray-800">🏅 蓮小終點計時組 v1.7.0</h1>
+                <h1 class="text-3xl font-bold text-gray-800">🏅 蓮小終點計時組 v1.8.1</h1>
                 
                 <div id="connection-status-container" class="no-print">
                     <div class="connection-status status-disconnected">
                         <div class="status-dot"></div>
                         <span>離線</span>
+                    </div>
+                </div>
+                
+                <div id="admin-mode-badge" class="hidden no-print">
+                    <div class="admin-status">
+                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 1a4.5 4.5 0 00-4.5 4.5V9H5a2 2 0 00-2 2v6a2 2 0 002 2h10a2 2 0 002-2v-6a2 2 0 00-2-2h-.5V5.5A4.5 4.5 0 0010 1zm3 8V5.5a3 3 0 10-6 0V9h6z" clip-rule="evenodd"></path></svg>
+                        <span>管理者模式</span>
                     </div>
                 </div>
 
@@ -355,7 +396,12 @@
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                     刪除全部項目
                 </button>
-            </div>
+                
+                <button id="btn-action-logout-admin" class="w-full hidden flex items-center justify-center gap-2 bg-purple-600 hover:bg-purple-700 text-white font-medium py-3 px-5 rounded-lg transition duration-200">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9"></path></svg>
+                    退出管理者模式
+                </button>
+                </div>
         </div>
     </div>
 
@@ -384,21 +430,16 @@
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             
-            // --- 【v1.7.0】Firebase 相關設定 (需求 #4) ---
-            // (v1.6.0) LOCAL_STORAGE_KEY 已被移除
-            let db; // Firebase Database 實例
-            const APP_DATA_PATH = 'appData'; // Firebase 上的主節點 (儲存即時項目)
-            const SNAPSHOTS_PATH = 'cloudSnapshots'; // (v1.7.0) 儲存雲端快照
-            
-            // 檢查 Firebase 是否成功初始化
+            // --- 【v1.7.0】Firebase 相關設定 (同 v1.7.0) ---
+            let db; 
+            const APP_DATA_PATH = 'appData'; 
+            const SNAPSHOTS_PATH = 'cloudSnapshots'; 
             const isFirebaseEnabled = (typeof firebase !== 'undefined' && typeof firebaseConfig !== 'undefined');
             if (isFirebaseEnabled) {
                 try {
                     db = firebase.database();
                     console.log("Firebase Database 實例已取得。");
-                } catch(e) {
-                    console.error("無法取得 Firebase Database 實例:", e);
-                }
+                } catch(e) { console.error("無法取得 Firebase Database 實例:", e); }
             } else {
                 console.warn("Firebase 未啟用，將以「離線本機模式」運行。");
             }
@@ -408,11 +449,11 @@
             let state = {
                 rankCount: 7, maxRank: 12, minRank: 1,
                 events: [], // 將由 Firebase 同步
-                // (v1.7.0) savedRecords 已移除，改用 Firebase
                 editingTime: { eventIndex: null, rank: null },
                 confirmCallback: null, confirmInterval: null, 
                 deleteTimeConfirmation: false, deleteTimeTimeout: null,
-                passwordCallback: null // (v1.7.0) 儲存密碼 modal 的回呼
+                passwordCallback: null,
+                isAdminAuthenticated: false // (v1.8.0) 需求 #1：管理者模式狀態
             };
 
             // --- DOM 節點 ---
@@ -440,7 +481,6 @@
             const timeCs = document.getElementById('time-cs');
             const btnCancelTime = document.getElementById('btn-cancel-time');
             const btnDeleteTime = document.getElementById('btn-delete-time');
-            // (v1.7.0) 需求 #4：更改 DOM 節點 ID
             const cloudSnapshotsContainer = document.getElementById('cloud-snapshots-container');
             const saveRecordModal = document.getElementById('save-record-modal');
             const saveRecordForm = document.getElementById('save-record-form');
@@ -457,12 +497,13 @@
             const btnActionExportHtml = document.getElementById('btn-action-export-html');
             const btnActionDeleteAll = document.getElementById('btn-action-delete-all');
             const connectionStatusContainer = document.getElementById('connection-status-container');
-            // (v1.7.0) 需求 #5：密碼 Modal DOM 節點
             const passwordModal = document.getElementById('password-modal');
             const passwordForm = document.getElementById('password-form');
             const passwordInput = document.getElementById('password-input');
             const passwordError = document.getElementById('password-error');
             const btnCancelPassword = document.getElementById('btn-cancel-password');
+            const adminModeBadge = document.getElementById('admin-mode-badge'); 
+            const btnActionLogoutAdmin = document.getElementById('btn-action-logout-admin'); // (v1.8.1) 需求 #1
 
 
             // --- 輔助工具 (Helpers) ---
@@ -480,11 +521,10 @@
                 }, 3000);
             }
 
-            // (同 v1.4.0) 格式化時間
+            // (v1.8.0) 格式化時間 (同 v1.8.0)
             function formatMillis(ms) {
-                if (ms === undefined || ms === null || isNaN(ms)) {
-                    return "---";
-                }
+                if (ms === undefined || ms === null || isNaN(ms)) { return ""; } // (v1.8.0) "---" 已由 placeholder 取代
+                
                 const totalCentiseconds = Math.round(ms / 10);
                 const minutes = Math.floor(totalCentiseconds / 6000);
                 const remainingCentiseconds = totalCentiseconds % 6000;
@@ -497,7 +537,7 @@
                     return `${pad(seconds)}"${pad(centiseconds)}`;
                 }
             }
-            // (同 v1.4.0) 解析時間
+            // (v1.4.0) 解析時間
             function parseTime(min, sec, cs) {
                 min = parseInt(min, 10) || 0;
                 sec = parseInt(sec, 10) || 0;
@@ -509,13 +549,16 @@
                 return (min * 60000) + (sec * 1000) + (cs * 10);
             }
             
-            // (v1.7.0) 移除 saveStateToLocalStorage()
-            // (v1.7.0) 移除 loadStateFromLocalStorage()
-            
-            // (v1.7.0) 需求 #5：密碼相關
+            // (v1.7.0) 密碼相關
             const ADMIN_PASSWORD = 'alp';
 
+            // (v1.8.0) 開啟密碼 Modal
             function openPasswordModal(callback) {
+                if (state.isAdminAuthenticated) {
+                    callback(); // 直接執行
+                    return;
+                }
+                
                 state.passwordCallback = callback;
                 passwordInput.value = '';
                 passwordError.classList.add('hidden');
@@ -530,13 +573,19 @@
                 state.passwordCallback = null;
             }
 
+            // (v1.8.0) 處理密碼提交
             function handlePasswordSubmit(e) {
                 e.preventDefault();
                 if (passwordInput.value === ADMIN_PASSWORD) {
+                    
+                    state.isAdminAuthenticated = true;
+                    adminModeBadge.classList.remove('hidden');
+                    
                     if (state.passwordCallback) {
                         state.passwordCallback();
                     }
                     closePasswordModal();
+                    showToast('🔒 已進入管理者模式', 'success');
                 } else {
                     passwordError.classList.remove('hidden');
                     passwordInput.select();
@@ -587,7 +636,7 @@
                 renderTableBody();
             }
 
-            // (同 v1.5.1) 渲染表頭
+            // (v1.5.1) 渲染表頭
             function renderTableHeader() {
                 tableHead.innerHTML = '';
                 const tr = document.createElement('tr');
@@ -627,7 +676,7 @@
             }
 
             /**
-             * (v1.6.0) 渲染表格主體 (tbody)
+             * (v1.8.1) 需求 #2：修正筆型圖示
              */
             function renderTableBody() {
                 tableBody.innerHTML = ''; 
@@ -648,8 +697,9 @@
                 events.forEach((event, index) => {
                     if (!event) return; 
 
+                    // (v1.8.1) 需求 #3：移除 'hover:bg-blue-50'，交由 CSS style 控制
                     const tr = document.createElement('tr');
-                    tr.className = 'border-b border-gray-200 hover:bg-blue-50 transition duration-150';
+                    tr.className = 'border-b border-gray-200 transition duration-150';
                     tr.dataset.eventIndex = index;
                     if (index % 2 !== 0) {
                         tr.classList.add('bg-gray-50');
@@ -686,9 +736,18 @@
                     sortBtnContainer.id = `sort-btn-container-${index}`;
                     sortBtnContainer.className = 'ml-1';
                     
+                    // * ▼▼▼ (v1.8.1) 需求 #2：更換筆型圖示的 SVG ▼▼▼
+                    // * 舊版 SVG (v1.8.0) d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897l8.93-8.93zM16.862 4.487l-8.93 8.93-1.688-1.688 8.93-8.93 1.688 1.688z"
+                    const newPencilIconSVG = `
+                        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.815 19.874a2.25 2.25 0 01-1.06.58L3 21l.546-2.828a2.25 2.25 0 01.58-1.06L16.862 4.487z" />
+                        </svg>
+                    `;
+                    // * ▲▲▲ (v1.8.1) 替換完畢 ▲▲▲
+
                     buttonContainer.innerHTML = `
                         <button class="cell-action-btn btn-icon-edit btn-toggle-edit-icon">
-                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897l8.93-8.93zM16.862 4.487l-8.93 8.93-1.688-1.688 8.93-8.93 1.688 1.688z"></path></svg>
+                            ${newPencilIconSVG}
                         </button>
                         <button class="cell-action-btn btn-icon-save btn-save-name-icon hidden">
                             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
@@ -704,7 +763,7 @@
                     tdName.appendChild(flexContainer);
                     tr.appendChild(tdName);
 
-                    // 3. 名次輸入格
+                    // 3. 名次輸入格 (同 v1.8.0)
                     for (let i = 1; i <= state.rankCount; i++) {
                         const tdRank = document.createElement('td');
                         tdRank.className = 'time-cell';
@@ -713,14 +772,15 @@
                         tdRank.id = `cell-${index}-${i}`;
                         
                         const timeInMs = (event.ranks && event.ranks[i]) ? event.ranks[i] : null;
-                        const timeText = formatMillis(timeInMs);
-                        
-                        if (timeInMs === undefined || timeInMs === null) {
-                            tdRank.classList.add('empty');
-                        }
                         
                         const timeTextNode = document.createElement('div');
-                        timeTextNode.textContent = timeText;
+                        if (timeInMs === undefined || timeInMs === null) {
+                            timeTextNode.textContent = i; // 顯示名次數字
+                            timeTextNode.classList.add('time-cell-placeholder'); 
+                            tdRank.classList.add('empty');
+                        } else {
+                            timeTextNode.textContent = formatMillis(timeInMs);
+                        }
                         
                         const swapBtnContainer = document.createElement('div');
                         swapBtnContainer.id = `swap-btn-container-${index}-${i}`;
@@ -731,17 +791,16 @@
                         tr.appendChild(tdRank);
                     }
                     tableBody.appendChild(tr);
-                    validateEventRow(index); // 渲染完畢後立即驗證
+                    validateEventRow(index); // (v1.8.0) 渲染完畢後立即驗證 (包含高亮)
                 });
             }
             
-            // (v1.7.0) 需求 #4：渲染 "雲端快照" 按鈕
+            // (v1.7.0) 渲染 "雲端快照" 按鈕
             function renderCloudSnapshots(snapshot) {
                 cloudSnapshotsContainer.innerHTML = '';
                 if (!snapshot.exists()) return;
 
                 const snapshots = snapshot.val();
-                // 依時間倒序
                 const sortedKeys = Object.keys(snapshots).sort((a, b) => {
                     return snapshots[b].createdAt - snapshots[a].createdAt;
                 });
@@ -898,7 +957,7 @@
                     .catch(err => showToast(`更新失敗: ${err.message}`, 'error'));
             }
 
-            // 【v1.7.0】需求 #2：開啟時間輸入 (修改 focus)
+            // (v1.7.0) 開啟時間輸入 (同 v1.7.0)
             function openTimeInputModal(eventIndex, rank) {
                 const event = state.events[eventIndex];
                 if (!event) return;
@@ -919,8 +978,7 @@
                 timeInputModal.classList.remove('hidden');
                 timeInputModal.classList.add('visible');
                 
-                // timeMin.focus(); // (v1.6.0)
-                timeSec.focus(); // 👈 (v1.7.0) 需求 #2：預設從 "秒" 開始輸入
+                timeSec.focus(); 
             }
             
             // (v1.4.0) 關閉時間輸入
@@ -968,7 +1026,7 @@
                 
                 const timePath = `${APP_DATA_PATH}/events/${eventIndex}/ranks/${rank}`;
                 
-                db.ref(timePath).set(null) // 或 .remove()
+                db.ref(timePath).set(null) 
                     .then(() => {
                         closeTimeInputModal();
                         showToast('時間已清除');
@@ -976,18 +1034,24 @@
                     .catch(err => showToast(`刪除時間失敗: ${err.message}`, 'error'));
             }
 
-            // (v1.6.0) 時間衝突驗證
+            // (v1.8.0) 驗證 (同 v1.8.0)
             function validateEventRow(eventIndex) {
                 const event = state.events[eventIndex];
                 if (!event) return;
+                
+                const tr = document.querySelector(`tr[data-event-index="${eventIndex}"]`);
+                if (!tr) return;
+
                 const ranks = event.ranks || {};
                 let lastValidTime = -1;
                 let lastValidRank = 0;
                 let errors = []; 
                 let conflictRanks = new Set(); 
-                let allRanksWithTime = []; 
+                let allRanksWithTime = [];
+                let allRanksFilled = true;
 
                 // 1. 清除舊狀態
+                tr.classList.remove('row-complete-highlight'); 
                 for (let i = 1; i <= state.rankCount; i++) {
                     const cell = document.getElementById(`cell-${eventIndex}-${i}`);
                     if (cell) {
@@ -1012,6 +1076,8 @@
                         }
                         lastValidTime = currentTime;
                         lastValidRank = i;
+                    } else {
+                        allRanksFilled = false;
                     }
                 }
 
@@ -1021,33 +1087,37 @@
                     if (cell) cell.classList.add('error');
                 });
 
-                // 4. 渲染按鈕
-                if (errors.length === 0) return; 
-
-                if (conflictRanks.size === 2) {
-                    const { rank1, rank2 } = errors[0];
-                    const swapContainer = document.getElementById(`swap-btn-container-${eventIndex}-${rank2}`);
-                    if (swapContainer) {
-                        swapContainer.innerHTML = createSwapButton(eventIndex, rank1, rank2);
-                    }
-                } else if (conflictRanks.size > 2) {
-                    errors.forEach(({ rank1, rank2 }) => {
+                // 4. 渲染按鈕 
+                if (errors.length > 0) {
+                    if (conflictRanks.size === 2) {
+                        const { rank1, rank2 } = errors[0];
                         const swapContainer = document.getElementById(`swap-btn-container-${eventIndex}-${rank2}`);
                         if (swapContainer) {
                             swapContainer.innerHTML = createSwapButton(eventIndex, rank1, rank2);
                         }
-                    });
-                    if (sortContainer && allRanksWithTime.length > 1) {
-                        sortContainer.innerHTML = createSortButton(eventIndex);
+                    } else if (conflictRanks.size > 2) {
+                        errors.forEach(({ rank1, rank2 }) => {
+                            const swapContainer = document.getElementById(`swap-btn-container-${eventIndex}-${rank2}`);
+                            if (swapContainer) {
+                                swapContainer.innerHTML = createSwapButton(eventIndex, rank1, rank2);
+                            }
+                        });
+                        if (sortContainer && allRanksWithTime.length > 1) {
+                            sortContainer.innerHTML = createSortButton(eventIndex);
+                        }
                     }
+                }
+
+                // 5. 檢查是否高亮
+                const hasErrors = conflictRanks.size > 0;
+                if (allRanksFilled && !hasErrors) {
+                    tr.classList.add('row-complete-highlight');
                 }
             }
 
-            // --- v1.7.0 衝突處理輔助函式 (需求 #3) ---
+            // --- v1.7.0 衝突處理輔助函式 (同 v1.7.0) ---
             
-            // (v1.7.0) 需求 #3：更換 "互換" 圖示
             function createSwapButton(eventIndex, rank1, rank2) {
-                // (v1.7.0) 更換為 "左右箭頭" 圖示 (Heroicon: arrows-right-left)
                 const swapIcon = `<svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M7.5 21L3 16.5m0 0L7.5 12M3 16.5h18m-7.5-12L21 9m0 0L16.5 4.5M21 9H3"></path></svg>`;
                 return `
                     <button class="conflict-btn btn-swap" 
@@ -1060,9 +1130,7 @@
                 `;
             }
             
-            // (v1.7.0) 需求 #3：更換 "排序" 圖示
             function createSortButton(eventIndex) {
-                // (v1.7.0) 更換為 "排序" 圖示 (Heroicon: bars-3-bottom-left)
                 const sortIcon = `<svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 4.5h14.25M3 9h14.25m-14.25 4.5h14.25M3 18h6.75"></path></svg>`;
                 return `
                     <button class="cell-sort-btn btn-sort-row" 
@@ -1073,7 +1141,6 @@
                 `;
             }
 
-            // (v1.6.0) 執行時間互換
             function swapTimes(eventIndex, rank1, rank2) {
                 if (!isFirebaseEnabled) {
                     showToast('離線模式無法操作', 'error');
@@ -1093,7 +1160,6 @@
                     .catch(err => showToast(`互換失敗: ${err.message}`, 'error'));
             }
 
-            // (v1.6.0) 執行自動排序
             function autoSortRow(eventIndex) {
                 if (!isFirebaseEnabled) {
                     showToast('離線模式無法操作', 'error');
@@ -1130,7 +1196,7 @@
             }
 
 
-            // (v1.7.0) 儲存/載入 "雲端快照" (需求 #4)
+            // (v1.7.0) 儲存/載入 "雲端快照" (同 v1.7.0)
             
             function openSaveRecordModal() {
                 recordTitleInput.value = '';
@@ -1143,7 +1209,6 @@
                 saveRecordModal.classList.add('hidden');
             }
             
-            // 【v1.7.0】儲存 "雲端快照" (Req #4)
             function handleSaveCloudRecord(e) {
                 e.preventDefault();
                 if (!isFirebaseEnabled) { showToast('離線模式無法操作', 'error'); return; }
@@ -1152,7 +1217,7 @@
                 if (!title) { showToast('請輸入紀錄標題', 'error'); return; }
                 
                 const recordData = {
-                    events: JSON.parse(JSON.stringify(state.events)), // 深度複製
+                    events: JSON.parse(JSON.stringify(state.events)),
                     rankCount: state.rankCount
                 };
                 
@@ -1171,14 +1236,12 @@
                     .catch(err => showToast(`快照儲存失敗: ${err.message}`, 'error'));
             }
             
-            // 【v1.7.0】"載入" 雲端快照 (-> 覆蓋 Firebase)
             function loadCloudSnapshot(key) {
                 if (!isFirebaseEnabled) {
                     showToast('離線模式無法操作', 'error');
                     return;
                 }
                 
-                // 讀取一次快照資料
                 db.ref(`${SNAPSHOTS_PATH}/${key}`).once('value')
                     .then(snapshot => {
                         if (!snapshot.exists()) {
@@ -1186,14 +1249,13 @@
                             return;
                         }
                         const record = snapshot.val();
-                        const dataToUpload = record.data; // { events: [...], rankCount: ... }
+                        const dataToUpload = record.data; 
 
                         if (!dataToUpload || !dataToUpload.events) {
                             showToast('快照資料格式不正確', 'error');
                             return;
                         }
 
-                        // 顯示確認視窗
                         showCustomConfirm(
                             '載入雲端快照',
                             `確定要載入 "${record.title}" 嗎？\n這將會覆蓋「目前所有」項目，讓所有人同步到此版本。`,
@@ -1201,7 +1263,6 @@
                                 db.ref(APP_DATA_PATH).set(dataToUpload)
                                     .then(() => {
                                         showToast(`已載入快照: ${record.title} (雲端同步中)`, 'success');
-                                        // onValue 會自動更新畫面
                                     })
                                     .catch(err => showToast(`載入失敗: ${err.message}`, 'error'));
                             }
@@ -1210,7 +1271,6 @@
                     .catch(err => showToast(`讀取快照失敗: ${err.message}`, 'error'));
             }
 
-            // 【v1.7.0】刪除 "雲端快照"
             function deleteCloudSnapshot(key) {
                 if (!isFirebaseEnabled) {
                     showToast('離線模式無法操作', 'error');
@@ -1220,13 +1280,18 @@
                 db.ref(`${SNAPSHOTS_PATH}/${key}`).remove()
                     .then(() => {
                         showToast(`雲端快照已刪除`);
-                        // onValue 會自動更新畫面
                     })
                     .catch(err => showToast(`刪除失敗: ${err.message}`, 'error'));
             }
 
-            // (v1.5.0) 操作 Modal 功能
+            // 【v1.8.1】需求 #1：修改操作 Modal
             function openActionsModal() {
+                // (v1.8.1) 根據管理狀態顯示/隱藏登出按鈕
+                if (state.isAdminAuthenticated) {
+                    btnActionLogoutAdmin.classList.remove('hidden');
+                } else {
+                    btnActionLogoutAdmin.classList.add('hidden');
+                }
                 actionsModal.classList.remove('hidden');
                 actionsModal.classList.add('visible');
             }
@@ -1235,7 +1300,16 @@
                 actionsModal.classList.add('hidden');
             }
 
-            // (v1.5.0) 匯出 HTML (邏輯不變)
+            // (v1.8.1) 需求 #1：登出管理者
+            function logoutAdminMode() {
+                state.isAdminAuthenticated = false;
+                adminModeBadge.classList.add('hidden');
+                btnActionLogoutAdmin.classList.add('hidden');
+                closeActionsModal();
+                showToast('已退出管理者模式', 'success');
+            }
+
+            // (v1.5.0) 匯出 HTML (同 v1.8.0)
             function handleExportHtml() {
                 if (!state.events || state.events.length === 0) {
                     showToast('沒有項目可匯出', 'error');
@@ -1259,7 +1333,7 @@
                 }
             }
 
-            // (v1.6.0) 產生靜態 HTML
+            // (v1.8.0) 產生靜態 HTML
             function generateStaticHtml() {
                 const rankCount = state.rankCount;
                 let ths = `<th style="padding: 8px 10px; text-align: center; border: 1px solid #ccc; width: 50px;">序號</th>`;
@@ -1272,31 +1346,45 @@
                 (state.events || []).forEach((event, index) => {
                     if (!event) return;
                     const eventRanks = event.ranks || {};
+                    
+                    let allRanksFilled = true;
+                    let hasErrors = false;
+                    let lastTime = -1;
+                    
+                    for (let i = 1; i <= rankCount; i++) {
+                        const timeInMs = eventRanks[i];
+                        if (timeInMs === undefined || timeInMs === null) {
+                            allRanksFilled = false;
+                        } else {
+                            if (lastTime !== -1 && timeInMs < lastTime) hasErrors = true;
+                            lastTime = timeInMs;
+                        }
+                    }
+                    const isComplete = allRanksFilled && !hasErrors;
+                    const completeStyle = isComplete ? 'background-color: #dcfce7;' : ''; 
 
                     let tds = `<td style="padding: 6px 10px; text-align: center; border: 1px solid #ccc;">${index + 1}</td>`;
                     tds += `<td style="padding: 6px 10px; text-align: left; border: 1px solid #ccc; font-weight: 500;">${event.name}</td>`;
                     
+                    lastTime = -1; 
+                    
                     for (let i = 1; i <= rankCount; i++) {
                         const timeInMs = eventRanks[i];
-                        const timeText = formatMillis(timeInMs);
+                        const timeText = (timeInMs === undefined || timeInMs === null) ? "" : formatMillis(timeInMs);
+                        
                         let isError = false;
                         if (timeInMs !== undefined && timeInMs !== null) {
-                            let lastValidTime = -1;
-                            for (let j = 1; j <= i; j++) {
-                                const prevTime = eventRanks[j];
-                                if (prevTime !== undefined && prevTime !== null) {
-                                    if (j === i && prevTime < lastValidTime) isError = true;
-                                    lastValidTime = prevTime;
-                                }
-                            }
+                            if (lastTime !== -1 && timeInMs < lastTime) isError = true;
+                            lastTime = timeInMs;
                         }
+                        
                         const errorStyle = isError ? 'background-color: #fee2e2; color: #ef4444; font-weight: bold;' : '';
                         tds += `<td style="padding: 6px 10px; text-align: center; border: 1px solid #ccc; font-family: 'Courier New', monospace; ${errorStyle}">
                             ${timeText}
                         </td>`;
                     }
-                    const bgStyle = (index % 2 !== 0) ? 'background-color: #f9fafb;' : '';
-                    trs += `<tr style="${bgStyle}">${tds}</tr>`;
+                    const bgStyle = (index % 2 !== 0 && !isComplete) ? 'background-color: #f9fafb;' : ''; 
+                    trs += `<tr style="${bgStyle} ${completeStyle}">${tds}</tr>`;
                 });
                 const staticStyles = `
                     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans TC', sans-serif; background-color: #f3f4f6; padding: 20px; font-size: 14px; }
@@ -1309,7 +1397,7 @@
                     <!DOCTYPE html>
                     <html lang="zh-Hant">
                     <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-                        <title>終點計時報表</title><style>${staticStyles}</style>
+                        <title>終點計時報表 (v1.8.1)</title><style>${staticStyles}</style>
                     </head><body><div class="container">
                         <h1>🏅 蓮小終點計時組 - 靜態報表</h1>
                         <table><thead><tr>${ths}</tr></thead><tbody>${trs}</tbody></table>
@@ -1396,12 +1484,11 @@
                 }
             });
 
-            // (v1.7.0) 需求 #5：表頭按鈕 (加入密碼)
+            // (v1.8.0) 表頭按鈕
             tableHead.addEventListener('click', (e) => {
                 const btnOpen = e.target.closest('#btn-open-actions-modal');
                 if (btnOpen) {
-                    // openActionsModal(); // (v1.6.0)
-                    openPasswordModal(openActionsModal); // 👈 (v1.7.0)
+                    openPasswordModal(openActionsModal); 
                 }
             });
             
@@ -1436,7 +1523,10 @@
                 );
             });
 
-            // (v1.7.0) 需求 #4 & #5：雲端快照區監聽 (加入密碼)
+            // (v1.8.1) 需求 #1：登出按鈕監聽
+            btnActionLogoutAdmin.addEventListener('click', logoutAdminMode);
+
+            // (v1.8.0) 雲端快照區監聽
             cloudSnapshotsContainer.addEventListener('click', (e) => {
                 const target = e.target;
                 const loadBtn = target.closest('.saved-record-btn');
@@ -1445,7 +1535,6 @@
                 if (loadBtn) {
                     const key = loadBtn.dataset.key;
                     if (key) {
-                        // 👈 (v1.7.0) 載入前詢問密碼
                         openPasswordModal(() => {
                             loadCloudSnapshot(key); 
                         });
@@ -1457,7 +1546,6 @@
                     const key = deleteBtn.dataset.key;
                     const title = deleteBtn.dataset.title || '此紀錄';
                     if (key) {
-                        // 👈 (v1.7.0) 刪除前詢問密碼
                         openPasswordModal(() => {
                             showCustomConfirm(
                                 '刪除雲端快照',
@@ -1470,7 +1558,7 @@
                 }
             });
 
-            // (v1.7.0) 更新 "儲存" 表單監聽
+            // (v1.7.0) 儲存表單監聽
             saveRecordForm.addEventListener('submit', handleSaveCloudRecord);
             btnCancelSaveRecord.addEventListener('click', closeSaveRecordModal);
             saveRecordModal.addEventListener('click', (e) => e.target === saveRecordModal && closeSaveRecordModal());
@@ -1485,13 +1573,13 @@
             customConfirmCancel.addEventListener('click', hideCustomConfirm);
             customConfirmModal.addEventListener('click', (e) => e.target === customConfirmModal && hideCustomConfirm());
 
-            // (v1.7.0) 需求 #5：密碼視窗監聽
+            // (v1.7.0) 密碼視窗監聽
             passwordForm.addEventListener('submit', handlePasswordSubmit);
             btnCancelPassword.addEventListener('click', closePasswordModal);
             passwordModal.addEventListener('click', (e) => e.target === passwordModal && closePasswordModal());
 
 
-            // --- 【v1.7.0】Firebase 即時監聽 (加入快照監聽) ---
+            // --- 【v1.7.0】Firebase 即時監聽 (同 v1.7.0) ---
             
             function setupFirebaseListeners() {
                 if (!isFirebaseEnabled) return;
@@ -1534,7 +1622,7 @@
                     showToast('資料同步失敗，請檢查網路連線', 'error');
                 });
 
-                // (v1.7.0) 需求 #4：監聽雲端快照節點
+                // 監聽雲端快照節點
                 const snapshotsRef = db.ref(SNAPSHOTS_PATH);
                 snapshotsRef.on('value', renderCloudSnapshots, (error) => {
                     console.error("Firebase 快照讀取失敗:", error);
@@ -1544,12 +1632,10 @@
 
             // --- 初始化 ---
             function init() {
-                // (v1.7.0) 移除 loadStateFromLocalStorage() 和 renderSavedRecordsButtons()
-                // Firebase 監聽器將會自動處理畫面渲染
-                
                 if (isFirebaseEnabled) {
-                    setupFirebaseListeners(); // 啟動 Firebase 監聽
-                    showToast('歡迎使用 蓮小終點計時組 v1.7.0 (雲端版)', 'success');
+                    setupFirebaseListeners(); 
+                    // (v1.8.1) 更新 Toast
+                    showToast('歡迎使用 蓮小終點計時組 v1.8.1 (雲端版)', 'success');
                 } else {
                     // 離線模式
                     connectionStatusContainer.innerHTML = `
