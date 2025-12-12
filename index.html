@@ -1255,88 +1255,72 @@
                 updateStopwatchUIState();
             }
 
-            function updateStopwatchUIState() {
-                swBtnStart.classList.add('hidden');
-                swBtnPause.classList.add('hidden');
-                swBtnLap.classList.add('hidden');
-                swBtnStop.classList.add('hidden');
-                swBtnHost.classList.add('hidden');
-                swBtnHost.classList.remove('sw-hosting-pulse');
+           function updateStopwatchUIState() {
+                // 1. 初始化：全部隱藏
+                const buttons = [swBtnStart, swBtnPause, swBtnLap, swBtnStop, swBtnHost];
+                buttons.forEach(btn => btn.classList.add('hidden'));
+                
+                // 重置託管按鈕樣式
+                swBtnHost.classList.remove('sw-hosting-pulse', 'bg-purple-600');
+                
+                // 重置 Reset 按鈕
                 swBtnReset.disabled = false;
                 swBtnReset.classList.remove('btn-disabled');
 
-                if (state.stopwatch.isContinuous) {
-                    swLapsList.classList.remove('hidden');
-                    if (state.stopwatch.isRunning) {
+                // 2. 判斷是否正在跑
+                if (state.stopwatch.isRunning) {
+                    // === 計時中 ===
+                    if (state.stopwatch.isContinuous) {
                         swBtnLap.classList.remove('hidden');
                         swBtnStop.classList.remove('hidden');
-                        swBtnReset.disabled = true; // 跑動中不可歸零
-                        swBtnReset.classList.add('btn-disabled');
                     } else {
-                        // 初始狀態或暫停
-                        if (state.stopwatch.elapsedTime === 0) {
-                             // v2.8.0: 歸零狀態顯示託管按鈕
-                            if (state.stopwatch.isHosting) {
-                                swBtnHost.classList.remove('hidden', 'sw-btn-host');
-                                swBtnHost.classList.add('sw-hosting-pulse', 'bg-purple-600'); // 託管中樣式
-                                swBtnHost.innerHTML = '❌'; // 取消圖示
-                                swBtnHost.title = "取消託管";
-                                // 託管中隱藏開始鈕，等待遠端
-                                swBtnStart.classList.add('hidden'); 
-                            } else {
-                                swBtnHost.classList.remove('hidden', 'sw-hosting-pulse', 'bg-purple-600');
-                                swBtnHost.classList.add('sw-btn-host');
-                                swBtnHost.innerHTML = '📡';
-                                swBtnHost.title = "碼表託管 (等待統一發令)";
-                                
-                                swBtnStart.classList.remove('hidden');
-                                // 管理員特別樣式
-                                if (state.isAdminAuthenticated) {
-                                    swBtnStart.classList.add('bg-red-600', 'hover:bg-red-700', 'border-2', 'border-yellow-300');
-                                    swBtnStart.title = "🔥 啟動全員碼表 🔥";
-                                    swBtnStart.innerHTML = '🔫';
-                                } else {
-                                    swBtnStart.classList.remove('bg-red-600', 'hover:bg-red-700', 'border-2', 'border-yellow-300');
-                                    swBtnStart.title = "開始";
-                                    swBtnStart.innerHTML = '▶️';
-                                }
-                            }
-                        } else {
-                            swBtnStart.classList.remove('hidden'); // 暫停後繼續
-                            swBtnStart.innerHTML = '▶️'; // 恢復普通樣式
-                        }
-                    }
-                } else {
-                    // 一般模式 (非連續)
-                    swLapsList.classList.add('hidden');
-                    if (state.stopwatch.isRunning) {
                         swBtnPause.classList.remove('hidden');
-                        swBtnReset.disabled = true;
-                    } else {
-                         // v2.8.0: 歸零狀態顯示託管按鈕 (邏輯同上)
-                        if (state.stopwatch.elapsedTime === 0) {
-                            if (state.stopwatch.isHosting) {
-                                swBtnHost.classList.remove('hidden', 'sw-btn-host');
-                                swBtnHost.classList.add('sw-hosting-pulse', 'bg-purple-600');
-                                swBtnHost.innerHTML = '❌';
-                                swBtnStart.classList.add('hidden');
-                            } else {
-                                swBtnHost.classList.remove('hidden', 'sw-hosting-pulse', 'bg-purple-600');
-                                swBtnHost.classList.add('sw-btn-host');
-                                swBtnHost.innerHTML = '📡';
-                                swBtnStart.classList.remove('hidden');
-                                if (state.isAdminAuthenticated) {
-                                    swBtnStart.classList.add('bg-red-600', 'hover:bg-red-700', 'border-2', 'border-yellow-300');
-                                    swBtnStart.innerHTML = '🔫';
-                                } else {
-                                    swBtnStart.classList.remove('bg-red-600', 'hover:bg-red-700', 'border-2', 'border-yellow-300');
-                                    swBtnStart.innerHTML = '▶️';
-                                }
-                            }
+                    }
+                    swLapsList.classList.toggle('hidden', !state.stopwatch.isContinuous);
+                    
+                    // 跑動中禁止歸零
+                    swBtnReset.disabled = true;
+                    swBtnReset.classList.add('btn-disabled');
+                    
+                } else {
+                    // === 停止或暫停狀態 ===
+                    swLapsList.classList.toggle('hidden', !state.stopwatch.isContinuous);
+
+                    if (state.stopwatch.elapsedTime === 0) {
+                        // === A. 歸零狀態 (這是唯一可以託管的時候) ===
+                        
+                        if (state.stopwatch.isHosting) {
+                            // [情境 1] 託管中：顯示閃爍的取消按鈕，隱藏開始按鈕
+                            swBtnHost.classList.remove('hidden', 'sw-btn-host');
+                            swBtnHost.classList.add('sw-hosting-pulse', 'bg-purple-600');
+                            swBtnHost.innerHTML = '❌';
+                            swBtnHost.title = "取消託管";
+                            // 這裡不顯示 swBtnStart
                         } else {
+                            // [情境 2] 正常待命：顯示託管按鈕 + 開始按鈕
+                            swBtnHost.classList.remove('hidden', 'sw-hosting-pulse', 'bg-purple-600');
+                            swBtnHost.classList.add('sw-btn-host');
+                            swBtnHost.innerHTML = '📡';
+                            swBtnHost.title = "碼表託管";
+                            
                             swBtnStart.classList.remove('hidden');
-                            swBtnStart.innerHTML = '▶️';
+                            // 管理員發令槍樣式
+                            if (state.isAdminAuthenticated) {
+                                swBtnStart.classList.add('bg-red-600', 'hover:bg-red-700', 'border-2', 'border-yellow-300');
+                                swBtnStart.innerHTML = '🔫';
+                                swBtnStart.title = "啟動全員碼表";
+                            } else {
+                                swBtnStart.classList.remove('bg-red-600', 'hover:bg-red-700', 'border-2', 'border-yellow-300');
+                                swBtnStart.innerHTML = '▶️';
+                                swBtnStart.title = "開始";
+                            }
                         }
+                    } else {
+                        // === B. 暫停狀態 (有時間) ===
+                        swBtnStart.classList.remove('hidden');
+                        swBtnStart.innerHTML = '▶️';
+                        swBtnStart.title = "繼續";
+                        // 暫停時不顯示託管按鈕
                     }
                 }
             }
@@ -1436,30 +1420,41 @@
             }
 // --- v2.8.0 Hosting & Remote Start Logic ---
             function toggleHosting() {
-                if (!isFirebaseEnabled) { showToast('離線模式無法使用託管', 'error'); return; }
-                if (state.stopwatch.isRunning || state.stopwatch.elapsedTime > 0) { showToast('請先歸零碼表', 'error'); return; }
+                // 1. 基本檢查
+                if (state.stopwatch.isRunning || state.stopwatch.elapsedTime > 0) { 
+                    showToast('請先歸零碼表', 'error'); 
+                    return; 
+                }
 
+                // 2. 切換狀態
                 const isNowHosting = !state.stopwatch.isHosting;
                 state.stopwatch.isHosting = isNowHosting;
 
-                // 更新 Firebase 計數器 (Transaction 確保準確)
-                const countRef = db.ref(HOST_COUNT_PATH);
-                countRef.transaction((currentCount) => {
-                    return (currentCount || 0) + (isNowHosting ? 1 : -1);
-                });
-
-                // 處理離線自動扣除 (防止瀏覽器關閉卡死計數)
-                if (isNowHosting) {
-                    countRef.onDisconnect().transaction((count) => (count || 0) - 1);
-                } else {
-                    countRef.onDisconnect().cancel();
-                }
-
+                // 3. ★ 優先更新 UI (避免因為網路問題導致按鈕沒反應)
                 updateStopwatchUIState();
+
                 if (isNowHosting) {
                     showToast('📡 已進入託管模式，等待發令...');
                 } else {
                     showToast('已取消託管');
+                }
+
+                // 4. 嘗試連線 Firebase (加強防呆，防止 db 未定義時報錯)
+                if (isFirebaseEnabled && typeof db !== 'undefined') {
+                    try {
+                        const countRef = db.ref(HOST_COUNT_PATH);
+                        countRef.transaction((currentCount) => {
+                            return (currentCount || 0) + (isNowHosting ? 1 : -1);
+                        });
+
+                        if (isNowHosting) {
+                            countRef.onDisconnect().transaction((count) => (count || 0) - 1);
+                        } else {
+                            countRef.onDisconnect().cancel();
+                        }
+                    } catch (e) {
+                        console.warn("Firebase 連線異常，僅執行本機 UI 切換", e);
+                    }
                 }
             }
 
