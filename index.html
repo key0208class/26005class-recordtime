@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>蓮小終點計時組 v2.8.0</title>
+    <title>蓮小終點計時組 v2.8.2</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     
@@ -357,7 +357,7 @@
                         </div>
                         <div class="flex flex-col items-end">
                             <span class="text-xs font-bold text-gray-400 tracking-wider uppercase">Pro Stopwatch</span>
-                            <span class="text-[10px] text-gray-500">v2.8.0</span>
+                            <span class="text-[10px] text-gray-500">v2.8.2</span>
                         </div>
                     </div>
                 </div>
@@ -375,7 +375,12 @@
                     <label for="toggle-vibration" class="toggle-label"></label>
                 </div>
                 <div class="sw-setting-item">
-                    <span title="開啟後使用計次(Split)功能">🔄 連續計時</span>
+                    <span title="開啟後顯示託管按鈕">📡 託管模式</span>
+                    <input type="checkbox" id="toggle-hosting-mode" class="toggle-checkbox">
+                    <label for="toggle-hosting-mode" class="toggle-label"></label>
+                </div>
+                <div class="sw-setting-item">
+                    <span>🔄 連續計時</span>
                     <input type="checkbox" id="toggle-continuous" class="toggle-checkbox">
                     <label for="toggle-continuous" class="toggle-label"></label>
                 </div>
@@ -406,7 +411,7 @@
         
         <header class="mb-6 flex flex-col sm:flex-row justify-between items-center gap-4">
             <div class="flex items-center gap-3 flex-wrap">
-                <h1 class="text-3xl font-bold text-gray-800 tracking-tight">🏅 蓮小終點計時組 <span class="text-sm font-normal text-gray-500 align-middle">v2.8.0</span></h1>
+                <h1 class="text-3xl font-bold text-gray-800 tracking-tight">🏅 蓮小終點計時組 <span class="text-sm font-normal text-gray-500 align-middle">v2.8.2</span></h1>
                 
                 <div id="connection-status-container" class="no-print">
                     <div class="connection-status status-disconnected">
@@ -882,11 +887,13 @@
                     elapsedTime: 0,
                     intervalId: null,
                     isExpanded: false,
+                    isExpanded: false,
                     isContinuous: false, 
                     laps: [], 
                     settings: {
                         sound: false,
-                        vibration: false
+                        vibration: false,
+                        hostingMode: false // v2.8.2 新增
                     }
                 }
             };
@@ -1001,7 +1008,8 @@
             const swSettingsMenu = document.getElementById('sw-settings-menu');
             const toggleSound = document.getElementById('toggle-sound');
             const toggleVibration = document.getElementById('toggle-vibration');
-            const toggleContinuous = document.getElementById('toggle-continuous'); 
+            const toggleHostingMode = document.getElementById('toggle-hosting-mode'); // v2.8.2 新增
+            const toggleContinuous = document.getElementById('toggle-continuous');
 
             // --- Helpers ---
             function showToast(message, type = 'success') {
@@ -1069,9 +1077,15 @@
             }
             function handlePasswordSubmit(e) {
                 e.preventDefault();
-                if (passwordInput.value === ADMIN_PASSWORD) {
+               if (passwordInput.value === ADMIN_PASSWORD) {
                     state.isAdminAuthenticated = true;
                     adminModeBadge.classList.remove('hidden');
+                    
+                    // v2.8.2: 管理員模式強制開啟託管功能
+                    state.stopwatch.settings.hostingMode = true;
+                    toggleHostingMode.checked = true;
+                    showToast('📡 已強制開啟託管功能');
+
                     if (state.passwordCallback) state.passwordCallback();
                     closePasswordModal();
                     renderTable(); // Re-render to show OK buttons
@@ -1289,7 +1303,7 @@
                     if (state.stopwatch.elapsedTime === 0) {
                         // === A. 歸零狀態 (這是唯一可以託管的時候) ===
                         
-                        if (state.stopwatch.isHosting) {
+                       if (state.stopwatch.isHosting) {
                             // [情境 1] 託管中：顯示閃爍的取消按鈕，隱藏開始按鈕
                             swBtnHost.classList.remove('hidden', 'sw-btn-host');
                             swBtnHost.classList.add('sw-hosting-pulse', 'bg-purple-600');
@@ -1297,9 +1311,16 @@
                             swBtnHost.title = "取消託管";
                             // 這裡不顯示 swBtnStart
                         } else {
-                            // [情境 2] 正常待命：顯示託管按鈕 + 開始按鈕
-                            swBtnHost.classList.remove('hidden', 'sw-hosting-pulse', 'bg-purple-600');
-                            swBtnHost.classList.add('sw-btn-host');
+                            // [情境 2] 正常待命
+                            
+                            // v2.8.2 修改：依據設定決定是否顯示託管按鈕
+                            if (state.stopwatch.settings.hostingMode) {
+                                swBtnHost.classList.remove('hidden', 'sw-hosting-pulse', 'bg-purple-600');
+                                swBtnHost.classList.add('sw-btn-host');
+                            } else {
+                                swBtnHost.classList.add('hidden');
+                            }
+                            
                             swBtnHost.innerHTML = '📡';
                             swBtnHost.title = "碼表託管";
                             
@@ -2781,12 +2802,17 @@ function generateStaticHtml(reportTitle = "靜態報表") { // v2.7.5: 接收標
             btnImportStopwatch.addEventListener('click', importStopwatchTime);
             btnImportSplits.addEventListener('click', importSplitTimes); 
             
-            swSettingsToggle.addEventListener('click', () => {
+           swSettingsToggle.addEventListener('click', () => {
                 swSettingsMenu.classList.toggle('hidden');
             });
             toggleSound.addEventListener('change', (e) => state.stopwatch.settings.sound = e.target.checked);
             toggleVibration.addEventListener('change', (e) => state.stopwatch.settings.vibration = e.target.checked);
-            toggleContinuous.addEventListener('change', toggleContinuousMode); 
+            // v2.8.2 新增託管模式監聽
+            toggleHostingMode.addEventListener('change', (e) => {
+                state.stopwatch.settings.hostingMode = e.target.checked;
+                updateStopwatchUIState(); // 即時更新介面
+            });
+            toggleContinuous.addEventListener('change', toggleContinuousMode);
 
             // --- Init ---
             // --- v2.7.0 Logic: Qualification (計時擇優) ---
